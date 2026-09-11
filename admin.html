@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Panel de Administración — Flora Elegante</title>
+    <link rel="icon" href="img/logo.svg" type="image/svg+xml">
+    <script src="vendor/tailwind.js"></script>
+    <script src="js/tailwind-config.js"></script>
+    
+    <link href="vendor/fonts/fonts.css" rel="stylesheet">
+    <link rel="stylesheet" href="vendor/fontawesome/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="pattern-bg min-h-screen" data-page="admin">
+
+    <!-- ===== BARRA SUPERIOR ===== -->
+    <header class="bg-forest text-white sticky top-0 z-40 shadow-lg">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between gap-4">
+            <div class="flex items-center gap-3">
+                <img src="img/logo.svg" alt="Ramo de Flora Elegante" class="w-11 h-11">
+                <div>
+                    <p class="font-display font-bold text-lg leading-tight">Flora Elegante</p>
+                    <p class="text-white/50 text-xs">Panel de Administración</p>
+                </div>
+            </div>
+            <div class="flex items-center gap-5">
+                <div class="flex items-center gap-2">
+                    <button id="langToggle" class="text-xs font-bold px-2.5 py-1.5 rounded-lg border border-white/30 hover:border-gold hover:text-gold transition" aria-label="Cambiar idioma">EN</button>
+                    <button id="curToggle" class="text-xs font-bold px-2.5 py-1.5 rounded-lg border border-white/30 hover:border-gold hover:text-gold transition" aria-label="Cambiar moneda">USD</button>
+                </div>
+                <span id="adminUserName" class="hidden sm:flex items-center gap-2 text-sm text-white/80">
+                    <i class="fa-solid fa-user-shield text-gold"></i>Administrador
+                </span>
+                <a href="index.html" class="text-sm text-white/70 hover:text-white transition">
+                    <i class="fa-solid fa-store mr-1"></i><span class="hidden sm:inline">Ver sitio</span>
+                </a>
+                <button id="adminLogout" class="text-sm bg-white/10 hover:bg-terra px-4 py-2 rounded-lg transition">
+                    <i class="fa-solid fa-right-from-bracket mr-1"></i><span class="hidden sm:inline">Salir</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-6 py-12">
+
+    <!-- ===== PANEL DEL NEGOCIO (dashboard) ===== -->
+    <section id="panel" class="mb-20">
+        <div class="mb-10">
+            <p class="text-terra font-body tracking-[0.2em] uppercase text-sm mb-3">Panel del negocio</p>
+            <h1 class="font-display font-bold text-4xl md:text-5xl text-charcoal">Información General</h1>
+            <div class="w-20 h-0.5 bg-gold mt-6"></div>
+        </div>
+
+        <!-- Tarjetas de métricas -->
+        <div class="grid grid-cols-2 lg:grid-cols-4 gap-6 mb-10">
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-bord">
+                <div class="w-11 h-11 rounded-full bg-leaf/10 flex items-center justify-center mb-3"><i class="fa-solid fa-users text-leaf"></i></div>
+                <p class="text-muted text-xs font-bold uppercase tracking-wider">Clientes</p>
+                <p id="statUsuarios" class="font-display font-bold text-4xl text-charcoal mt-1">0</p>
+            </div>
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-bord">
+                <div class="w-11 h-11 rounded-full bg-gold/10 flex items-center justify-center mb-3"><i class="fa-solid fa-box text-gold"></i></div>
+                <p class="text-muted text-xs font-bold uppercase tracking-wider">Productos</p>
+                <p id="statProductos" class="font-display font-bold text-4xl text-charcoal mt-1">0</p>
+            </div>
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-bord">
+                <div class="w-11 h-11 rounded-full bg-blue-100 flex items-center justify-center mb-3"><i class="fa-solid fa-file-invoice text-blue-600"></i></div>
+                <p class="text-muted text-xs font-bold uppercase tracking-wider">Pedidos</p>
+                <p id="statPedidos" class="font-display font-bold text-4xl text-charcoal mt-1">0</p>
+            </div>
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-bord">
+                <div class="w-11 h-11 rounded-full bg-terra/10 flex items-center justify-center mb-3"><i class="fa-solid fa-triangle-exclamation text-terra"></i></div>
+                <p class="text-muted text-xs font-bold uppercase tracking-wider">Inventario bajo</p>
+                <p id="statInventarioBajo" class="font-display font-bold text-4xl text-charcoal mt-1">0</p>
+            </div>
+        </div>
+
+        <div class="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            <!-- Inventario bajo -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-bord">
+                <h3 class="font-display font-bold text-lg text-charcoal mb-4"><i class="fa-solid fa-triangle-exclamation text-terra mr-2"></i>Inventario bajo</h3>
+                <div id="inventarioBajoList" class="space-y-3 max-h-[300px] overflow-y-auto pr-1"></div>
+            </div>
+            <!-- Estado de los pedidos -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-bord">
+                <h3 class="font-display font-bold text-lg text-charcoal mb-4"><i class="fa-solid fa-chart-pie text-gold mr-2"></i>Estado de los pedidos</h3>
+                <div id="estadosPedidos" class="space-y-4"></div>
+            </div>
+            <!-- Últimos pedidos -->
+            <div class="bg-white rounded-2xl p-6 shadow-sm border border-bord">
+                <h3 class="font-display font-bold text-lg text-charcoal mb-4"><i class="fa-solid fa-clock text-blue-600 mr-2"></i>Últimos pedidos</h3>
+                <div id="ultimosPedidos" class="divide-y divide-bord max-h-[300px] overflow-y-auto pr-1"></div>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== GESTIÓN DE PRODUCTOS (CRUD) ===== -->
+    <section id="productos" class="mb-20">
+        <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+            <div>
+                <p class="text-terra font-body tracking-[0.2em] uppercase text-sm mb-3">Catálogo</p>
+                <h2 class="font-display font-bold text-3xl md:text-4xl text-charcoal">Gestión de Productos</h2>
+                <p class="text-muted text-sm mt-2">Los productos se guardan en la base de datos.</p>
+            </div>
+            <button id="nuevoProductoBtn" class="btn-primary">
+                <i class="fa-solid fa-plus mr-2"></i>Nuevo producto
+            </button>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-bord overflow-hidden">
+            <div id="productosTable" class="overflow-x-auto"></div>
+        </div>
+    </section>
+
+    <!-- ===== PEDIDOS ===== -->
+    <section id="pedidos" class="mb-20">
+        <div class="mb-8">
+            <p class="text-terra font-body tracking-[0.2em] uppercase text-sm mb-3">Ventas</p>
+            <h2 class="font-display font-bold text-3xl md:text-4xl text-charcoal">Pedidos</h2>
+            <p class="text-muted text-sm mt-2">Consulta los pedidos y cambia su estado.</p>
+        </div>
+
+        <div class="bg-white rounded-2xl shadow-sm border border-bord overflow-hidden">
+            <div id="pedidosTable" class="overflow-x-auto"></div>
+        </div>
+    </section>
+
+    <!-- ===== REPORTE MENSUAL ===== -->
+    <section id="reporte">
+        <div class="mb-10">
+            <p class="text-terra font-body tracking-[0.2em] uppercase text-sm mb-3">Atención al cliente</p>
+            <h1 class="font-display font-bold text-4xl md:text-5xl text-charcoal">Reporte Mensual</h1>
+            <div class="w-20 h-0.5 bg-gold mt-6"></div>
+        </div>
+
+            <!-- Selector de mes y botón generar -->
+            <div class="flex flex-col sm:flex-row items-center justify-start gap-4 mb-12">
+                <div class="flex items-center gap-3 bg-white rounded-xl shadow-sm border border-bord px-5 py-3">
+                    <i class="fa-regular fa-calendar text-gold"></i>
+                    <select id="reportMonth" class="text-sm font-bold text-charcoal bg-transparent focus:outline-none cursor-pointer"></select>
+                </div>
+                <button id="generateReportBtn" class="btn-primary">
+                    <i class="fa-solid fa-chart-bar mr-2"></i>Generar Reporte
+                </button>
+            </div>
+
+            <!-- Contenido del reporte -->
+            <div id="reportContent" class="hidden">
+                <!-- Estado vacío: sin datos en el mes seleccionado -->
+                <div id="reportEmpty" class="hidden bg-white rounded-2xl p-12 shadow-sm border border-bord text-center mb-10">
+                    <div class="w-20 h-20 rounded-full bg-cream-dark flex items-center justify-center mx-auto mb-5">
+                        <i class="fa-regular fa-folder-open text-muted text-3xl"></i>
+                    </div>
+                    <h3 class="font-display font-bold text-2xl text-charcoal mb-2">Sin datos este mes</h3>
+                    <p class="text-muted text-sm max-w-md mx-auto leading-relaxed">
+                        No hay interacciones registradas en <strong id="emptyMonthLabel" class="text-charcoal"></strong><span class="text-charcoal">.</span>
+                        Selecciona otro mes o genera calificaciones y sugerencias desde el chatbot de la tienda.
+                    </p>
+                </div>
+
+                <div id="reportData">
+                <!-- Tarjetas de métricas -->
+                <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-10">
+                    <div class="bg-white rounded-2xl p-8 shadow-sm border border-bord text-center">
+                        <div class="w-14 h-14 rounded-full bg-leaf/10 flex items-center justify-center mx-auto mb-4">
+                            <i class="fa-solid fa-users text-leaf text-xl"></i>
+                        </div>
+                        <p class="text-muted text-sm font-bold uppercase tracking-wider mb-2">Personas Atendidas</p>
+                        <p id="metricAttended" class="font-display font-bold text-5xl text-charcoal">0</p>
+                    </div>
+                    <div class="bg-white rounded-2xl p-8 shadow-sm border border-bord text-center">
+                        <div class="w-14 h-14 rounded-full bg-gold/10 flex items-center justify-center mx-auto mb-4">
+                            <i class="fa-solid fa-star text-gold text-xl"></i>
+                        </div>
+                        <p class="text-muted text-sm font-bold uppercase tracking-wider mb-2">Calificación Promedio</p>
+                        <p id="metricRating" class="font-display font-bold text-5xl text-charcoal">0</p>
+                        <div id="metricStars" class="mt-2 text-gold text-lg"></div>
+                    </div>
+                    <div class="bg-white rounded-2xl p-8 shadow-sm border border-bord text-center">
+                        <div class="w-14 h-14 rounded-full bg-terra/10 flex items-center justify-center mx-auto mb-4">
+                            <i class="fa-solid fa-face-smile text-terra text-xl"></i>
+                        </div>
+                        <p class="text-muted text-sm font-bold uppercase tracking-wider mb-2">Satisfacción</p>
+                        <p id="metricSatisfaction" class="font-display font-bold text-5xl text-charcoal">0%</p>
+                    </div>
+                </div>
+
+                <!-- Distribución de calificaciones -->
+                <div class="bg-white rounded-2xl p-8 shadow-sm border border-bord mb-10">
+                    <h3 class="font-display font-bold text-xl text-charcoal mb-6">Distribución de Calificaciones</h3>
+                    <div id="ratingBars" class="space-y-4"></div>
+                </div>
+
+                <!-- Dos columnas: Sugerencias y Recomendaciones -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-8 mb-16">
+                    <!-- Sugerencias de clientes -->
+                    <div class="bg-white rounded-2xl p-8 shadow-sm border border-bord">
+                        <h3 class="font-display font-bold text-xl text-charcoal mb-6">
+                            <i class="fa-solid fa-comments text-terra mr-2"></i>Sugerencias de Clientes
+                        </h3>
+                        <div id="suggestionsList" class="space-y-4 max-h-[400px] overflow-y-auto pr-2"></div>
+                    </div>
+                    <!-- Recomendaciones para administración -->
+                    <div class="bg-forest rounded-2xl p-8 shadow-lg">
+                        <h3 class="font-display font-bold text-xl text-white mb-6">
+                            <i class="fa-solid fa-lightbulb text-gold mr-2"></i>Recomendaciones para la Administración
+                        </h3>
+                        <div id="adminRecommendations" class="space-y-4 max-h-[400px] overflow-y-auto pr-2"></div>
+                    </div>
+                </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== CLIENTES REGISTRADOS ===== -->
+        <section id="clientes" class="pt-4">
+            <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-8">
+                <div>
+                    <p class="text-terra font-body tracking-[0.2em] uppercase text-sm mb-3">CRM</p>
+                    <h2 class="font-display font-bold text-3xl md:text-4xl text-charcoal">Clientes Registrados</h2>
+                </div>
+                <button id="toggleSensitive" class="bg-charcoal text-white text-sm font-bold px-5 py-2.5 rounded-lg hover:bg-forest transition">
+                    <i class="fa-solid fa-eye mr-2"></i>Mostrar datos semiprivados
+                </button>
+            </div>
+
+            <!-- Leyenda de clasificación -->
+            <div class="flex flex-wrap gap-3 mb-6">
+                <span class="tag-publico text-xs font-bold px-3 py-1 rounded-full">PÚBLICO</span>
+                <span class="tag-semiprivado text-xs font-bold px-3 py-1 rounded-full">SEMIPRIVADO (visible con botón)</span>
+                <span class="tag-privado text-xs font-bold px-3 py-1 rounded-full">PRIVADO (protegido)</span>
+                <span class="tag-sensible text-xs font-bold px-3 py-1 rounded-full">SENSIBLE (nunca visible)</span>
+            </div>
+
+            <div class="bg-white rounded-2xl shadow-sm border border-bord overflow-hidden">
+                <div id="clientesTable" class="overflow-x-auto"></div>
+            </div>
+        </section>
+    </main>
+
+    <footer class="bg-charcoal text-white/50 py-6 px-6 text-center text-xs">
+        Panel exclusivo para personal autorizado · Flora Elegante 2025
+    </footer>
+
+    <!-- ===== MODAL PRODUCTO (crear/editar) ===== -->
+    <div id="productoModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 overflow-y-auto bg-forest/60 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-2xl my-8">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-bord bg-cream/60 rounded-t-2xl">
+                <h3 class="font-display font-bold text-xl text-charcoal" id="productoModalTitle">Nuevo producto</h3>
+                <button onclick="AdminPanel.cerrarFormulario()" class="text-muted hover:text-terra text-xl" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <form id="productoForm" class="p-6 grid grid-cols-1 md:grid-cols-2 gap-4" novalidate onsubmit="event.preventDefault(); AdminPanel.guardarProducto();">
+                <input type="hidden" id="prodId">
+                <div>
+                    <label class="block mb-1 text-sm font-bold text-charcoal">Nombre (es)</label>
+                    <input id="prodNombre" required class="w-full border border-bord rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20">
+                </div>
+                <div>
+                    <label class="block mb-1 text-sm font-bold text-charcoal">Nombre (en)</label>
+                    <input id="prodNombreEn" class="w-full border border-bord rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20">
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block mb-1 text-sm font-bold text-charcoal">Descripción (es)</label>
+                    <textarea id="prodDesc" rows="2" class="w-full border border-bord rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20"></textarea>
+                </div>
+                <div class="md:col-span-2">
+                    <label class="block mb-1 text-sm font-bold text-charcoal">Descripción (en)</label>
+                    <textarea id="prodDescEn" rows="2" class="w-full border border-bord rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20"></textarea>
+                </div>
+                <div>
+                    <label class="block mb-1 text-sm font-bold text-charcoal">Categoría</label>
+                    <select id="prodCategoria" class="w-full border border-bord rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20"></select>
+                </div>
+                <div>
+                    <label class="block mb-1 text-sm font-bold text-charcoal">Precio (COP)</label>
+                    <input id="propPrecio" type="number" min="0" step="0.01" required class="w-full border border-bord rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20">
+                </div>
+                <div>
+                    <label class="block mb-1 text-sm font-bold text-charcoal">Imagen (ruta)</label>
+                    <input id="prodImagen" placeholder="img/rosas-rojas.jpg" class="w-full border border-bord rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20">
+                </div>
+                <div>
+                    <label class="block mb-1 text-sm font-bold text-charcoal">Cantidad disponible</label>
+                    <input id="prodStock" type="number" min="0" required class="w-full border border-bord rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20">
+                </div>
+                <div>
+                    <label class="block mb-1 text-sm font-bold text-charcoal">Estado</label>
+                    <select id="prodEstado" class="w-full border border-bord rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20">
+                        <option value="activo">Activo</option>
+                        <option value="inactivo">Inactivo</option>
+                    </select>
+                </div>
+                <div class="md:col-span-2 flex justify-end gap-3 pt-2">
+                    <button type="button" id="prodCancelar" class="px-5 py-2.5 rounded-lg border border-bord text-sm font-bold text-muted hover:bg-cream transition">Cancelar</button>
+                    <button id="prodGuardar" class="btn-primary"><i class="fa-solid fa-floppy-disk mr-2"></i>Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ===== MODAL DETALLE PEDIDO ===== -->
+    <div id="detalleModal" class="hidden fixed inset-0 z-[100] flex items-center justify-center p-4 bg-forest/60 backdrop-blur-sm">
+        <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md my-8">
+            <div class="flex items-center justify-between px-6 py-4 border-b border-bord bg-cream/60 rounded-t-2xl">
+                <h3 class="font-display font-bold text-xl text-charcoal">Detalle del pedido</h3>
+                <button onclick="AdminPanel.cerrarDetalle()" class="text-muted hover:text-terra text-xl" aria-label="Cerrar"><i class="fa-solid fa-xmark"></i></button>
+            </div>
+            <div id="detalleBody" class="p-6"></div>
+        </div>
+    </div>
+
+    <div id="toastContainer" class="fixed top-24 right-6 z-[110] space-y-3 pointer-events-none"></div>
+
+    <script src="js/i18n.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/catalog.js"></script>
+    <script src="js/form.js"></script>
+    <script src="js/chatbot.js"></script>
+    <script src="js/report.js"></script>
+    <script src="js/admin.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

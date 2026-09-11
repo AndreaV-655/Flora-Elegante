@@ -1,0 +1,327 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Diseño - Flora Elegante</title>
+<style>
+body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; color: #1a1a1a; }
+h1 { color: #14532D; font-size: 18pt; page-break-before: always; }
+h2 { color: #2E6B3F; font-size: 14pt; }
+h3 { color: #3D7A54; font-size: 12pt; }
+table, th, td { border: 1px solid #4a4a4a; border-collapse: collapse; }
+th { background-color: #E8F0E6; }
+td, th { padding: 4px 8px; font-size: 9.5pt; vertical-align: top; }
+p { text-align: justify; }
+code { font-family: Consolas, monospace; font-size: 9.5pt; background: #F4F4F4; }
+</style>
+</head>
+<body>
+
+<h1 style="page-break-before: avoid;">1. Objetivos del diseño</h1>
+<p>El presente documento especifica el <strong>diseño del sistema Flora Elegante</strong> a partir del análisis aprobado. Define la arquitectura de software, la organización de los componentes, el diseño de la base de datos, el contrato de la API, el diseño de la interfaz de usuario, el diseño del chatbot, el diseño del reporte mensual, el diseño del CRM con protección de datos y las decisiones de seguridad. El nivel de detalle corresponde a un diseño de ingeniería: suficiente para que un equipo de desarrollo implemente, pruebe y despliegue el sistema sin ambigüedades.</p>
+
+<h1>2. Arquitectura del sistema</h1>
+
+<h2>2.1 Estilo arquitectónico</h2>
+<p>Se adopta una arquitectura en <strong>tres capas (presentación, lógica/negocio y datos)</strong> con un patrón de controlador frontal (<em>front controller</em>) en la capa de negocio. Las capas se comunican mediante HTTP/JSON (fetch desde el navegador hacia la API PHP) y PDO (PHP hacia MySQL). Esta arquitectura permite: separación de responsabilidades, mantenibilidad por módulo, pruebas por capa y la migración futura a otros backends (p. ej. Node.js o Laravel con PostgreSQL) sin rediseñar la presentación.</p>
+
+<h2>2.2 Diagrama de arquitectura (descripción formal)</h2>
+<p>El diagrama de arquitectura se mantiene como artefacto PlantUML en el repositorio (diagrams/diagrama_arquitectura.puml). Los componentes y sus relaciones son:</p>
+<table>
+<tr><th>Capa</th><th>Componente</th><th>Responsabilidad</th></tr>
+<tr><td>Presentación</td><td>index.html, login.html, cliente.html, admin.html</td><td>Definición de páginas y estructura semántica (secciones por módulo).</td></tr>
+<tr><td>Presentación</td><td>css/styles.css, Tailwind, Font Awesome</td><td>Estilos de marca, sistema de diseño y botonera de iconos.</td></tr>
+<tr><td>Presentación</td><td>Módulos JS: main, i18n, ui, auth, form, catalog, cart, historial, admin, report, chatbot, data, api</td><td>Comportamiento de la interfaz, estado local y orquestación de llamadas.</td></tr>
+<tr><td>Lógica/API</td><td>api/index.php (front controller)</td><td>Recibe ?resource=&action= y delega al controlador.</td></tr>
+<tr><td>Lógica/API</td><td>auth, products, categories, orders, dashboard, clientes, interactions</td><td>Reglas de negocio, autorización y persistencia de cada dominio.</td></tr>
+<tr><td>Lógica/API</td><td>config, db, helpers, bootstrap</td><td>Configuración, conexión PDO, utilidades JSON/sesión y datos semilla.</td></tr>
+<tr><td>Datos</td><td>MySQL flora_elegante (8 tablas)</td><td>Persistencia relacional con integridad y restricciones.</td></tr>
+</table>
+
+<h2>2.3 Flujo de una petición</h2>
+<p>Ejemplo típico: el cliente confirma el carrito. 1) cart.js construye el payload {items:[{id,qty}]} y llama API.savePedido. 2) api.js ejecuta fetch a api/index.php?resource=orders&amp;action=create con método POST y credenciales same-origin (la cookie de sesión fe_session viaja automáticamente). 3) El front controller incluye orders.php. 4) helpers.php autentica la sesión (require_auth). 5) orders.php abre transacción, valida stock con SELECT ... FOR UPDATE, inserta pedido y detalle, actualiza stock y confirma. 6) Se responde JSON {ok, pedido}. 7) cart.js limpia el carrito y muestra la confirmación.</p>
+
+<h1>3. Diseño de componentes (backend)</h1>
+
+<h2>3.1 Controlador frontal (api/index.php)</h2>
+<p>Lee el parámetro resource, inicia sesión con session_name('fe_session'), configura cabeceras CORS y mapa de rutas {auth, products, categories, orders, dashboard, clientes, interactions}, e incluye el controlador correspondiente. Respuesta 404 JSON para recursos desconocidos. Configuración endurecida: declare(strict_types=1), display_errors=0 y log_errors=1 para no corromper las respuestas JSON.</p>
+
+<h2>3.2 Controlador de autenticación (api/auth.php)</h2>
+<p>Acciones: login, register, me, logout, profile, update_perfil, update_password. Diseño clave: login consulta por correo y activo=1 y verifica con password_verify; register valida formato y política de contraseñas, previene duplicados (409) e inserta usuario + perfil clasificado; update_perfil usa INSERT ... ON DUPLICATE KEY UPDATE para crear/actualizar el perfil sin eliminar datos; logout limpia sesión y expira cookie; update_password revalida la política y actualiza el hash.</p>
+
+<h2>3.3 Controlador de productos (api/products.php)</h2>
+<p>Acciones: list (público, solo activos, con nombre de categoría), adminList (todos, solo administrador), create, update, update_stock, delete (todas restringidas al rol administrador con require_auth(true)). Normalización del estado a 'activo'|'inactivo' y del stock a entero no negativo.</p>
+
+<h2>3.4 Controlador de pedidos (api/orders.php)</h2>
+<p>Acciones: create (cliente), list (cliente), adminList (admin), updateEstado (admin). El diseño transaccional del create es el punto crítico: beginTransaction, SELECT ... FOR UPDATE por producto (evita condiciones de carrera), verificación de stock, inserción de pedido y detalle, UPDATE de stock y commit; cualquier error revierte (rollBack). updateEstado valida la lista blanca de estados.</p>
+
+<h2>3.5 Controlador de dashboard (api/dashboard.php)</h2>
+<p>Calcula con consultas SQL agregadas: total de usuarios clientes, productos totales y activos, pedidos totales, productos con stock ≤ 5 (umbral) y activos, conteo por estado y últimos 5 pedidos con cliente. Solo administrador.</p>
+
+<h2>3.6 Controlador de clientes (api/clientes.php)</h2>
+<p>Consulta los clientes con su perfil; por diseño de privacidad, la consulta SQL selecciona explícitamente nombre, correo, fecha de registro, teléfono, dirección, fecha de nacimiento y preferencias, pero <strong>excluye identificacion y metodo_pago</strong> (nunca se seleccionan). Solo administrador.</p>
+
+<h2>3.7 Controlador de interacciones (api/interactions.php)</h2>
+<p>Acciones: list (admin), save (público). save normaliza la calificación a 1-5 (null si está fuera de rango) y la sugerencia a texto o null; vincula usuario_id solo si hay sesión (usuario_actual). Es la fuente de datos del reporte mensual.</p>
+
+<h2>3.8 Capa de infraestructura (config, db, helpers, bootstrap)</h2>
+<table>
+<tr><th>Archivo</th><th>Diseño</th></tr>
+<tr><td>api/config.php</td><td>Constantes DB_HOST='localhost', DB_NAME='flora_elegante', DB_USER='root', DB_PASS='', DB_CHARSET='utf8mb4'. Concentra la configuración para mantenibilidad (RNF-MAN-02).</td></tr>
+<tr><td>api/db.php</td><td>Función db() singleton PDO con ERRMODE_EXCEPTION, FETCH_ASSOC y EMULATE_PREPARES=false (preparación real de sentencias → mitigación de inyección SQL).</td></tr>
+<tr><td>api/helpers.php</td><td>json_out/json_error (respuestas JSON con códigos HTTP), body() (parsing JSON del cuerpo), usuario_actual() y require_auth($admin) (401/403).</td></tr>
+<tr><td>api/bootstrap.php</td><td>Bootstrap idempotente: inserta roles, crea cuentas demo (admin y cliente), perfiles y dos pedidos de ejemplo si no existen; se invoca desde auth.php.</td></tr>
+</table>
+
+<h1>4. Diseño de la base de datos</h1>
+
+<h2>4.1 Modelo entidad-relación</h2>
+<p>El modelo ER (artefacto diagrams/diagrama_er.puml) consta de ocho entidades agrupadas en módulos: Acceso y roles (rol, usuario), Perfil del cliente clasificado (cliente_perfil), Catálogo (categoria, producto), Ventas (pedido, pedido_detalle) e Interacciones del chatbot (interaccion). Relaciones principales: rol 1–N usuario; usuario 1–1 cliente_perfil; usuario 1–N pedido; pedido 1–N pedido_detalle; producto 1–N pedido_detalle; categoria 1–N producto; usuario 0–N interaccion.</p>
+
+<h2>4.2 Diccionario de datos</h2>
+<h3>4.2.1 Tabla rol</h3>
+<table>
+<tr><th>Columna</th><th>Tipo</th><th>Restricciones</th><th>Descripción</th></tr>
+<tr><td>id</td><td>INT</td><td>PK, AUTO_INCREMENT</td><td>Identificador del rol.</td></tr>
+<tr><td>nombre</td><td>VARCHAR(30)</td><td>NOT NULL, UNIQUE</td><td>'cliente' | 'administrador'.</td></tr>
+</table>
+
+<h3>4.2.2 Tabla usuario</h3>
+<table>
+<tr><th>Columna</th><th>Tipo</th><th>Restricciones</th><th>Clasificación</th></tr>
+<tr><td>id</td><td>BIGINT</td><td>PK, AUTO_INCREMENT</td><td>—</td></tr>
+<tr><td>nombre</td><td>VARCHAR(120)</td><td>NOT NULL</td><td>PÚBLICO</td></tr>
+<tr><td>email</td><td>VARCHAR(160)</td><td>NOT NULL, UNIQUE</td><td>PÚBLICO</td></tr>
+<tr><td>password_hash</td><td>VARCHAR(255)</td><td>NOT NULL</td><td>SENSIBLE (hash, nunca texto plano)</td></tr>
+<tr><td>rol_id</td><td>INT</td><td>NOT NULL, FK → rol.id</td><td>—</td></tr>
+<tr><td>activo</td><td>TINYINT(1)</td><td>NOT NULL DEFAULT 1</td><td>—</td></tr>
+<tr><td>fecha_registro</td><td>DATETIME</td><td>DEFAULT CURRENT_TIMESTAMP</td><td>—</td></tr>
+<tr><td>ultimo_acceso</td><td>DATETIME</td><td>NULL</td><td>—</td></tr>
+</table>
+<p>Índice: idx_usuario_rol (rol_id).</p>
+
+<h3>4.2.3 Tabla cliente_perfil</h3>
+<table>
+<tr><th>Columna</th><th>Tipo</th><th>Restricciones</th><th>Clasificación</th></tr>
+<tr><td>usuario_id</td><td>BIGINT</td><td>PK, FK → usuario.id ON DELETE CASCADE</td><td>—</td></tr>
+<tr><td>telefono</td><td>VARCHAR(30)</td><td>NULL</td><td>SEMIPRIVADO</td></tr>
+<tr><td>direccion</td><td>TEXT</td><td>NULL</td><td>SEMIPRIVADO</td></tr>
+<tr><td>fecha_nacimiento</td><td>DATE</td><td>NULL</td><td>PRIVADO</td></tr>
+<tr><td>preferencias_florales</td><td>VARCHAR(60)</td><td>NULL</td><td>PRIVADO</td></tr>
+<tr><td>identificacion</td><td>VARCHAR(40)</td><td>NULL</td><td>SENSIBLE (nunca expuesto)</td></tr>
+<tr><td>metodo_pago</td><td>VARCHAR(40)</td><td>NULL</td><td>SENSIBLE (nunca expuesto)</td></tr>
+<tr><td>actualizado_en</td><td>DATETIME</td><td>DEFAULT CURRENT_TIMESTAMP ON UPDATE</td><td>—</td></tr>
+</table>
+
+<h3>4.2.4 Tabla categoria</h3>
+<table>
+<tr><th>Columna</th><th>Tipo</th><th>Restricciones</th></tr>
+<tr><td>id</td><td>INT</td><td>PK, AUTO_INCREMENT</td></tr>
+<tr><td>nombre</td><td>VARCHAR(60)</td><td>NOT NULL, UNIQUE (español)</td></tr>
+<tr><td>nombre_en</td><td>VARCHAR(60)</td><td>NOT NULL (inglés)</td></tr>
+</table>
+<p>Datos semilla: rosas, lirios, girasoles, tulipanes, orquídeas, exóticas.</p>
+
+<h3>4.2.5 Tabla producto</h3>
+<table>
+<tr><th>Columna</th><th>Tipo</th><th>Restricciones</th><th>Notas</th></tr>
+<tr><td>id</td><td>INT</td><td>PK, AUTO_INCREMENT</td><td>—</td></tr>
+<tr><td>categoria_id</td><td>INT</td><td>NOT NULL, FK → categoria.id</td><td>—</td></tr>
+<tr><td>nombre / nombre_en</td><td>VARCHAR(120)</td><td>NOT NULL</td><td>PÚBLICO</td></tr>
+<tr><td>descripcion / descripcion_en</td><td>TEXT</td><td>NULL</td><td>PÚBLICO</td></tr>
+<tr><td>precio</td><td>DECIMAL(10,2)</td><td>NOT NULL, CHECK (precio &gt;= 0)</td><td>Moneda COP.</td></tr>
+<tr><td>imagen_url</td><td>VARCHAR(300)</td><td>NULL</td><td>Ruta local o URL.</td></tr>
+<tr><td>stock</td><td>INT</td><td>NOT NULL DEFAULT 0, CHECK (stock &gt;= 0)</td><td>INVENTARIO.</td></tr>
+<tr><td>estado</td><td>VARCHAR(20)</td><td>DEFAULT 'activo'</td><td>'activo' | 'inactivo'.</td></tr>
+</table>
+<p>Índice: idx_producto_categoria. Los datos semilla incluyen seis productos de referencia (Ramo de Rosas Rojas $85.000 COP, Arreglo de Lirios $98.000, Canasta de Girasoles $72.000, Tulipanes Mixtos $92.000, Centro de Mesa Tropical $118.000, Caja de Orquídeas $145.000).</p>
+
+<h3>4.2.6 Tabla pedido</h3>
+<table>
+<tr><th>Columna</th><th>Tipo</th><th>Restricciones</th></tr>
+<tr><td>id</td><td>BIGINT</td><td>PK, AUTO_INCREMENT</td></tr>
+<tr><td>cliente_id</td><td>BIGINT</td><td>NOT NULL, FK → usuario.id</td></tr>
+<tr><td>fecha</td><td>DATETIME</td><td>DEFAULT CURRENT_TIMESTAMP</td></tr>
+<tr><td>estado</td><td>VARCHAR(20)</td><td>DEFAULT 'Confirmado'</td></tr>
+<tr><td>total</td><td>DECIMAL(12,2)</td><td>NOT NULL DEFAULT 0</td></tr>
+</table>
+<p>Índice: idx_pedido_cliente. Estados válidos (regla RN-06): Confirmado, En camino, Entregado, Cancelado.</p>
+
+<h3>4.2.7 Tabla pedido_detalle</h3>
+<table>
+<tr><th>Columna</th><th>Tipo</th><th>Restricciones</th></tr>
+<tr><td>id</td><td>BIGINT</td><td>PK, AUTO_INCREMENT</td></tr>
+<tr><td>pedido_id</td><td>BIGINT</td><td>NOT NULL, FK → pedido.id ON DELETE CASCADE</td></tr>
+<tr><td>producto_id</td><td>INT</td><td>NOT NULL, FK → producto.id</td></tr>
+<tr><td>cantidad</td><td>INT</td><td>NOT NULL, CHECK (cantidad &gt; 0)</td></tr>
+<tr><td>precio_unitario</td><td>DECIMAL(10,2)</td><td>NOT NULL</td></tr>
+</table>
+
+<h3>4.2.8 Tabla interaccion</h3>
+<table>
+<tr><th>Columna</th><th>Tipo</th><th>Restricciones</th></tr>
+<tr><td>id</td><td>BIGINT</td><td>PK, AUTO_INCREMENT</td></tr>
+<tr><td>usuario_id</td><td>BIGINT</td><td>NULL, FK → usuario.id</td></tr>
+<tr><td>canal</td><td>VARCHAR(20)</td><td>DEFAULT 'chatbot'</td></tr>
+<tr><td>fecha</td><td>DATETIME</td><td>DEFAULT CURRENT_TIMESTAMP</td></tr>
+<tr><td>calificacion</td><td>TINYINT</td><td>NULL, CHECK (1..5)</td></tr>
+<tr><td>sugerencia</td><td>TEXT</td><td>NULL</td></tr>
+</table>
+<p>Índice: idx_interaccion_fecha (clave para el filtrado mensual del reporte). Datos semilla: 15 interacciones distribuidas entre -2 y -150 días para ejercitar el reporte mensual.</p>
+
+<h2>4.3 Diseño de datos de demostración</h2>
+<p>El diseño incluye una estrategia de datos demo para validar todas las funcionalidades: cuentas admin@floraelegante.mx / Admin2025* y cliente@demo.mx / Cliente123* (creadas por bootstrap con password_hash), dos pedidos de ejemplo y las 15 interacciones con calificaciones y sugerencias que alimentan el reporte. El esquema se entrega en sql/flora_elegante_mysql.sql para importación desde cero.</p>
+
+<h1>5. Diseño de la API (contrato de endpoints)</h1>
+
+<h2>5.1 Convenciones</h2>
+<ul>
+<li>Base URL: api/index.php (mismo origen). Formato: ?resource=&lt;recurso&gt;&amp;action=&lt;acción&gt;.</li>
+<li>Métodos: GET para consultas, POST para operaciones. Formato de entrada: body JSON (Content-Type: application/json).</li>
+<li>Formato de salida: JSON {ok: true|false, ...} con códigos HTTP semánticos (200, 400, 401, 403, 404, 409).</li>
+</ul>
+
+<h2>5.2 Catálogo de endpoints</h2>
+<table>
+<tr><th>Recurso</th><th>Acción</th><th>Método</th><th>Permiso</th><th>Parámetros</th><th>Respuesta principal</th></tr>
+<tr><td>auth</td><td>register</td><td>POST</td><td>Público</td><td>nombre, email, password, telefono, direccion, nacimiento, preferencias, identificacion, pago</td><td>{ok, usuario}</td></tr>
+<tr><td>auth</td><td>login</td><td>POST</td><td>Público</td><td>email, password</td><td>{ok, usuario}</td></tr>
+<tr><td>auth</td><td>me</td><td>GET</td><td>Autenticado</td><td>—</td><td>{ok, usuario}</td></tr>
+<tr><td>auth</td><td>logout</td><td>POST</td><td>Autenticado</td><td>—</td><td>{ok}</td></tr>
+<tr><td>auth</td><td>profile</td><td>GET</td><td>Autenticado</td><td>—</td><td>{ok, nombre, email, perfil}</td></tr>
+<tr><td>auth</td><td>update_perfil</td><td>POST</td><td>Autenticado</td><td>nombre, telefono, direccion, nacimiento, preferencias, identificacion, pago</td><td>{ok}</td></tr>
+<tr><td>auth</td><td>update_password</td><td>POST</td><td>Autenticado</td><td>newPassword</td><td>{ok}</td></tr>
+<tr><td>products</td><td>list</td><td>GET</td><td>Público</td><td>—</td><td>{ok, productos[]}</td></tr>
+<tr><td>products</td><td>adminList</td><td>GET</td><td>Admin</td><td>—</td><td>{ok, productos[]}</td></tr>
+<tr><td>products</td><td>create / update / delete / update_stock</td><td>POST</td><td>Admin</td><td>Campos del producto</td><td>{ok, id?}</td></tr>
+<tr><td>categories</td><td>list</td><td>GET</td><td>Público</td><td>—</td><td>{ok, categorias[]}</td></tr>
+<tr><td>orders</td><td>create</td><td>POST</td><td>Cliente</td><td>items[{id, qty}]</td><td>{ok, pedido}</td></tr>
+<tr><td>orders</td><td>list</td><td>GET</td><td>Cliente</td><td>—</td><td>{ok, pedidos[]}</td></tr>
+<tr><td>orders</td><td>adminList</td><td>GET</td><td>Admin</td><td>—</td><td>{ok, pedidos[]}</td></tr>
+<tr><td>orders</td><td>updateEstado</td><td>POST</td><td>Admin</td><td>id, estado</td><td>{ok}</td></tr>
+<tr><td>dashboard</td><td>(default)</td><td>GET</td><td>Admin</td><td>—</td><td>{ok, usuarios, productos_total, productos_activos, pedidos_total, inventario_bajo, umbral, estados, ultimos_pedidos}</td></tr>
+<tr><td>clientes</td><td>list</td><td>GET</td><td>Admin</td><td>—</td><td>{ok, clientes[]} (sin datos sensibles)</td></tr>
+<tr><td>interactions</td><td>list</td><td>GET</td><td>Admin</td><td>—</td><td>{ok, interacciones[]}</td></tr>
+<tr><td>interactions</td><td>save</td><td>POST</td><td>Público (opcional sesión)</td><td>calificacion, sugerencia</td><td>{ok, id}</td></tr>
+</table>
+
+<h1>6. Diseño de la interfaz de usuario</h1>
+
+<h2>6.1 Sistema de diseño y marca</h2>
+<p>La identidad visual se configura en js/tailwind-config.js: paleta "terra" (tierra), "leaf" (hoja) y "gold" (dorado), tipografías de marca y uso de Tailwind para el diseño responsive. El CSS propio (css/styles.css) define componentes específicos: globos de chat, carrusel del chatbot, barras de calificación, pétalos decorativos, toasts y animaciones con respeto a prefers-reduced-motion. Iconografía con Font Awesome.</p>
+
+<h2>6.2 Mapa de pantallas y navegación</h2>
+<table>
+<tr><th>Página</th><th>Secciones y funcionalidad</th><th>Acceso</th></tr>
+<tr><td>index.html</td><td>Hero, catálogo (catalog.js), carrito (drawer), registro y perfil (form.js), "Nosotros", aviso de privacidad, cambio de idioma/moneda, widget de chat (chatbot.js).</td><td>Público</td></tr>
+<tr><td>login.html</td><td>Formulario de inicio de sesión, enlace a registro, mensajes de error.</td><td>Público</td></tr>
+<tr><td>cliente.html</td><td>Historial de pedidos (historial.js), acceso a perfil y chatbot.</td><td>Cliente</td></tr>
+<tr><td>admin.html</td><td>Dashboard (admin.js), productos (CRUD), pedidos, reporte mensual (report.js) y CRM (report.js).</td><td>Administrador</td></tr>
+</table>
+
+<h2>6.3 Diseño de componentes clave</h2>
+<ul>
+<li><strong>Formulario de registro/perfil:</strong> cada campo con etiqueta, placeholder, validación en línea (mensajes bajo el campo, borde rojo y aria-invalid) y chip de clasificación de datos (PÚBLICO/SEMIPRIVADO/PRIVADO/SENSIBLE con colores distintivos). Incluye checkbox de aviso de privacidad obligatorio.</li>
+<li><strong>Carrito (drawer):</strong> panel lateral que lista productos, permite cambiar cantidades y eliminar, muestra subtotal y total, y dispone de botón de confirmación de compra que dispara la creación del pedido.</li>
+<li><strong>Widget de chat:</strong> botón flotante que abre el panel; mensajes de usuario (derecha) y del bot (izquierda con avatar), respuestas rápidas ("chips"), carrusel de arreglos, tarjetas de producto, indicador de escritura, selector de estrellas y campo de sugerencia.</li>
+<li><strong>Panel de administración:</strong> layout por pestañas/secciones: estadísticas con tarjetas y contadores animados, tabla de productos con acciones, tabla de pedidos con cambio de estado, sección de reporte mensual y tabla de CRM.</li>
+<li><strong>Reporte mensual:</strong> selector de mes (desplegable de los últimos 12), tarjetas de métricas (personas atendidas, calificación promedio con estrellas, % satisfacción), barras de distribución 1-5 con colores de severidad, lista de sugerencias y tarjetas de recomendaciones para la administración.</li>
+<li><strong>CRM:</strong> tabla con cabeceras etiquetadas por clasificación (PÚB, SEM, SEN), botón de alternancia para semiprivados y colocadores «Protegido» con candado para privados/sensibles.</li>
+</ul>
+
+<h2>6.4 Diseño responsive y de accesibilidad</h2>
+<ul>
+<li>Grilla fluida Tailwind para breakpoints móvil/tablet/escritorio; menú móvil en hamburguesa.</li>
+<li>Etiquetas aria-label en estrellas y botones del chatbot; estructura semántica con elementos nativos.</li>
+<li>prefers-reduced-motion desactiva animaciones (pétalos, contadores, typing, scroll reveal).</li>
+<li>Mensajes de error accesibles con aria-invalid y aria-live para lectores de pantalla.</li>
+</ul>
+
+<h1>7. Diseño del chatbot</h1>
+
+<h2>7.1 Estructura del módulo (js/chatbot.js)</h2>
+<p>El chatbot se implementa como módulo IIFE Chat con estado interno chatState (isOpen, phase, messageCount, currentRating, lastProduct, carouselPage, carouselVisited). Utiliza datos del catálogo (Data.productos), textos bilingües (I18n.te) y el carrito (Cart). Expone a window: ChatAsk (enviar texto), ShowMoreArrangements (paginar carrusel), handleRating (seleccionar estrellas) y handleSuggestion (registrar interacción).</p>
+
+<h2>7.2 Componentes de la arquitectura conversacional</h2>
+<table>
+<tr><th>Componente</th><th>Diseño</th></tr>
+<tr><td>Normalización (norm)</td><td>Minúsculas + eliminación de tildes (NFD y rango U+0300-U+036F) para robustez.</td></tr>
+<tr><td>Reconocimiento de producto (findProducto)</td><td>Coincidencia por nombre ES/EN completo; fallback por palabras clave &gt; 3 caracteres.</td></tr>
+<tr><td>Intenciones (processConversation)</td><td>Evaluación en orden: carrito → producto → afirmación sobre último producto → ocasiones (7) → más arreglos → catálogo → fin de conversación → saludo repetido → respuestas por palabras clave → respuesta genérica.</td></tr>
+<tr><td>Base de conocimientos</td><td>Data.botResponses: 16 temas (rosas, lirios, girasoles, tulipanes, orquídeas, exóticas, precios, entregas, horarios, pagos, garantías, pedidos, ubicación, personalización, cuidados, promociones, eventos, rastreo, humano).</td></tr>
+<tr><td>Ocasiones (OCASIONES)</td><td>Regex ES/EN para cumpleaños, aniversario/amor, pésame, bebé, mamá, graduación, disculpas; cada una sugiere ids específicos de Data.productos.</td></tr>
+<tr><td>Render</td><td>addBotMessage, addUserMessage, showTyping (indicador de escritura con retardos), showQuickReplies, addProductCarousel, addProductCards, productRow, carouselCard.</td></tr>
+<tr><td>Calificación</td><td>showRatingUI con 5 botones de estrella, resaltado acumulativo hover, persistencia de currentRating; onRating → gracias (alta ≥ 4 baja &lt; 4) y transición a sugerencia.</td></tr>
+<tr><td>Sugerencia</td><td>showSuggestionUI con input de texto y botón; handleSuggestion envía API.saveInteraccion({rating, sugerencia}) y muestra confirmación; evento fe:idioma re-etiqueta la UI.</td></tr>
+</table>
+
+<h2>7.3 Secuencia de registro de interacción</h2>
+<p>Tras la calificación y sugerencia, chatbot.js ejecuta API.saveInteraccion, que invoca interactions/save. El backend inserta la fila con usuario_id (si hay sesión) o NULL, canal 'chatbot', y los valores normalizados. El usuario recibe toast "Calificación y sugerencia registradas". Esta interacción queda disponible para el reporte mensual.</p>
+
+<h1>8. Diseño del reporte mensual</h1>
+
+<h2>8.1 Procesamiento en el frontend (js/report.js)</h2>
+<p>El módulo Report: (1) construye el selector con los últimos 12 meses (valor YYYY-MM) y nombres localizados; (2) obtiene las interacciones con API.getInteracciones (fecha normalizada a YYYY-MM-DD); (3) filtra por prefijo del mes; (4) renderiza métricas con animateCounter (respetando prefers-reduced-motion); (5) renderiza barras de distribución con ancho ≥ 8%; (6) renderiza la lista de sugerencias con estrellas ★; y (7) ejecuta renderRecommendations con las 11 reglas documentadas en el análisis.</p>
+
+<h2>8.2 Casos de borde diseñados</h2>
+<ul>
+<li>Mes sin interacciones → bloque "reportEmpty" con mensaje de estado vacío (no mostrar ceros).</li>
+<li>Rege-ración automática al cambiar de mes si el reporte ya está visible.</li>
+<li>Contadores decimales para el promedio (1 decimal) y enteros con sufijo % para satisfacción.</li>
+<li>Distribución recalcula conteos 1..5 y colores por severidad (#c9584d a #3d7a54).</li>
+</ul>
+
+<h1>9. Diseño del CRM y protección de datos</h1>
+<p>El CRM (dentro de report.js) consume api/clientes.php, que por diseño excluye identificacion y metodo_pago. La UI: calcula la edad desde fecha_nacimiento (función calcularEdad con límite 0..129), oculta o revela teléfono/dirección según mostrarSemiprivados, y muestra el marcador «Protegido» (candado) para preferencias, identificación y pago. Los encabezados llevan chips de clasificación (PÚB/SEM/SEN). Este diseño garantiza la regla RN-14/15/16 en dos capas de defensa: backend (no envía) y frontend (no renderiza).</p>
+
+<h1>10. Diseño de seguridad</h1>
+<table>
+<tr><th>Control</th><th>Diseño implementado</th></tr>
+<tr><td>Hash de contraseñas</td><td>password_hash(PASSWORD_DEFAULT) → bcrypt; verificación con password_verify; nunca texto plano.</td></tr>
+<tr><td>Inyección SQL</td><td>PDO con EMULATE_PREPARES=false y sentencias preparadas en todas las consultas con datos variables.</td></tr>
+<tr><td>Autorización por rol</td><td>require_auth($admin=true) en las acciones administrativas; respuesta 401 sin sesión y 403 sin rol.</td></tr>
+<tr><td>Sesión</td><td>Cookie de sesión fe_session (HttpOnly); logout destruye sesión y expira cookie.</td></tr>
+<tr><td>Exposición de errores</td><td>display_errors=0, log_errors=1; respuestas JSON uniformes.</td></tr>
+<tr><td>CORS</td><td>Cabeceras Access-Control-Allow-* y respuesta 204 a OPTIONS para futuros orígenes.</td></tr>
+<tr><td>Validación de entradas</td><td>Server-side: formato de correo (FILTER_VALIDATE_EMAIL), política de contraseñas, rangos numéricos, lista blanca de estados, normalización de calificación.</td></tr>
+<tr><td>Datos sensibles</td><td>No se seleccionan ni transmiten identificación/método de pago al API de clientes; enmascarado en UI.</td></tr>
+<tr><td>Integridad de datos</td><td>Transacciones con FOR UPDATE en pedidos; restricciones CHECK en la BD.</td></tr>
+</table>
+
+<h1>11. Diseño de internacionalización y moneda</h1>
+<p>El módulo i18n.js mantiene un diccionario TEXTO (claves ES → EN), funciones lang()/moneda() que persisten en localStorage (fe_lang, fe_moneda), función te(es, en) para seleccionar idioma, función precio(cop) que formatea en COP (es-CO) o USD (tipo de cambio RATE=4000), y aplicación de atributos data-i18n al DOM al cambiar idioma. Eventos de dominio fe:idioma y fe:moneda notifican a los módulos (catalog, cart, historial, report, chatbot) para re-renderizar sin recargar la página.</p>
+
+<h1>12. Diseño de módulos JavaScript (frontend)</h1>
+<table>
+<tr><th>Módulo</th><th>Responsabilidad y funciones principales</th></tr>
+<tr><td>main.js</td><td>Arranque por página (body data-page); i18n primero; protección de vistas administrativas; precarga de catálogo con API.cargarCatalogo; saludo personalizado.</td></tr>
+<tr><td>api.js</td><td>Capa de datos: request(resource, action, data, method) con fetch, credentials same-origin y manejo de errores de red/local; métodos CRUD y consultas por dominio.</td></tr>
+<tr><td>auth.js</td><td>Sesión en memoria/localStorage; login, registro, logout, renderNavAuth, cierre de sesión y redirección.</td></tr>
+<tr><td>form.js</td><td>Validación completa del formulario de registro/perfil; modos cliente registrado vs perfil (correo bloqueado); envío a register/update_perfil y cambio de contraseña opcional.</td></tr>
+<tr><td>catalog.js</td><td>Render del catálogo público; escucha fe:idioma/fe:moneda.</td></tr>
+<tr><td>cart.js</td><td>Estado del carrito en localStorage; add, setQty, remove, clear, count, totalCOP, render; apertura de drawer y confirmación del pedido.</td></tr>
+<tr><td>historial.js</td><td>Lista de pedidos del cliente con formato de fecha y moneda.</td></tr>
+<tr><td>admin.js</td><td>Dashboard (estadísticas), CRUD de productos con modal, gestión de pedidos con cambio de estado, helpers de formato.</td></tr>
+<tr><td>report.js</td><td>Reporte mensual y CRM (secciones 8 y 9).</td></tr>
+<tr><td>chatbot.js</td><td>Atención conversacional completa (sección 7).</td></tr>
+<tr><td>ui.js</td><td>Componentes genéricos: toasts, pétalos decorativos, reveal on scroll, menú móvil.</td></tr>
+<tr><td>data.js</td><td>Catálogo semilla, respuestas del chatbot, semillas de interacciones y clientes para demostración.</td></tr>
+</table>
+
+<h1>13. Matriz de decisiones de diseño</h1>
+<table>
+<tr><th>Decisión</th><th>Alternativas evaluadas</th><th>Selección</th><th>Justificación</th></tr>
+<tr><td>Stack</td><td>Node.js, Laravel, Django, stack puro PHP/MySQL</td><td>PHP 8 + MySQL (XAMPP)</td><td>Entorno solicitado, cero licencias, despliegue simple en hosting compartido.</td></tr>
+<tr><td>Acceso a datos</td><td>mysqli, ORM (Eloquent/Doctrine), PDO</td><td>PDO con sentencias preparadas</td><td>Portabilidad, seguridad, estándar PHP.</td></tr>
+<tr><td>Patrón de API</td><td>REST JSON complejo, SOAP, front controller simple</td><td>Front controller con recursos+acciones</td><td>Simplicidad, trazabilidad con el esquema, fácil de probar.</td></tr>
+<tr><td>Persistencia del carrito</td><td>Solo sesión, solo BD, localStorage</td><td>localStorage</td><td>Experiencia del visitante sin login; el pedido final valida todo en BD.</td></tr>
+<tr><td>Internacionalización</td><td>i18next, JSON de idiomas, diccionario propio</td><td>Diccionario propio con eventos fe:*</td><td>Ligero, sin dependencias, re-render reactivo.</td></tr>
+<tr><td>Protección de datos</td><td>Cifrado simétrico vs exclusión ulterior</td><td>Exclusión en SELECT + enmascarado en UI</td><td>Defensa en profundidad simple; los sensibles ni se consultan.</td></tr>
+<tr><td>Métricas del reporte</td><td>Vistas SQL vs cálculo en cliente</td><td>Cálculo en frontend sobre interacciones crudas</td><td>Flexibilidad de las 11 reglas; la BD entrega datos, el reporte interpreta.</td></tr>
+</table>
+
+<h1>14. Análisis de impacto del diseño sobre los requerimientos</h1>
+<p>El diseño cubre el 100% de los requerimientos «Must» y «Should». Los puntos sensibles verificados: el enmascarado de datos (RF-PRI y RF-CRM) se garantiza en dos capas; la atomicidad del pedido (RF-CAR-04/05) se garantiza con transacciones y bloqueo de filas; el reporte mensual (RF-REP-01 a 08) se materializa en report.js con la máquina de reglas documentada; el chatbot (RF-CHAT-01 a 13) cubre carrito, catálogo, ocasiones y registro de interacciones. La matriz de trazabilidad de diseño se presenta en el siguiente documento de desarrollo y en el plan de pruebas.</p>
+
+</body>
+</html>

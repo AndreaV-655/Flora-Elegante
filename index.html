@@ -1,0 +1,429 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Flora Elegante — Flores y Arreglos Exclusivos</title>
+    <link rel="icon" href="img/logo.svg" type="image/svg+xml">
+    <script src="vendor/tailwind.js"></script>
+    <script src="js/tailwind-config.js"></script>
+    
+    <link href="vendor/fonts/fonts.css" rel="stylesheet">
+    <link rel="stylesheet" href="vendor/fontawesome/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="pattern-bg" data-page="inicio">
+
+    <!-- ===== NAVEGACIÓN ===== -->
+    <nav id="mainNav" class="fixed top-0 left-0 w-full z-50 transition-all duration-500" style="background: transparent;">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <a href="#" class="flex items-center gap-3">
+                <img src="img/logo.svg" alt="Ramo de Flora Elegante" class="w-11 h-11 drop-shadow-lg">
+                <span class="font-display font-bold text-xl text-white tracking-wide">Flora Elegante</span>
+            </a>
+            <div class="hidden md:flex items-center gap-8">
+                <div class="flex items-center gap-5">
+                    <a href="#catalogo" class="text-white/80 hover:text-white transition font-light tracking-wide text-sm">Catálogo</a>
+                    <a href="#registro" class="text-white/80 hover:text-white transition font-light tracking-wide text-sm">Registro</a>
+                    <a href="#nosotros" class="text-white/80 hover:text-white transition font-light tracking-wide text-sm">Nosotros</a>
+                </div>
+                <div class="hidden md:flex items-center gap-2 mr-2">
+                    <button id="langToggle" class="text-xs font-bold px-2.5 py-1.5 rounded-lg border border-white/30 hover:border-gold hover:text-gold transition" aria-label="Cambiar idioma">EN</button>
+                    <button id="curToggle" class="text-xs font-bold px-2.5 py-1.5 rounded-lg border border-white/30 hover:border-gold hover:text-gold transition" aria-label="Cambiar moneda">USD</button>
+                </div>
+                <div id="navAuth" class="flex items-center gap-5"></div>
+                <button id="cartBtn" class="relative w-10 h-10 rounded-full bg-white/10 hover:bg-gold hover:text-forest text-white flex items-center justify-center transition" aria-label="Abrir carrito">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    <span class="cart-badge hidden absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-terra text-white text-[11px] font-bold flex items-center justify-center">0</span>
+                </button>
+            </div>
+            <div class="md:hidden flex items-center gap-2">
+                <button id="langToggleMv" class="lang-toggle text-xs font-bold px-2 py-1 rounded-lg border border-white/30 hover:border-gold hover:text-gold transition">EN</button>
+                <button id="curToggleMv" class="text-xs font-bold px-2 py-1 rounded-lg border border-white/30 hover:border-gold hover:text-gold transition">USD</button>
+                <button id="cartBtnMv" class="relative w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center" aria-label="Abrir carrito">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    <span class="cart-badge hidden absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-terra text-white text-[11px] font-bold flex items-center justify-center">0</span>
+                </button>
+                <button id="mobileMenuBtn" class="text-white text-xl" aria-label="Abrir menú">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+        </div>
+        <!-- Menú móvil -->
+        <div id="mobileMenu" class="md:hidden hidden bg-forest/95 backdrop-blur-md px-6 pb-6">
+            <a href="#catalogo" class="block py-3 text-white/80 hover:text-white border-b border-white/10">Catálogo</a>
+            <a href="#registro" class="block py-3 text-white/80 hover:text-white border-b border-white/10">Registro</a>
+            <a href="#nosotros" class="block py-3 text-white/80 hover:text-white border-b border-white/10">Nosotros</a>
+            <div id="mobileAuth" class="pt-3 flex flex-col gap-1"></div>
+        </div>
+    </nav>
+
+    <main>
+        <!-- ===== HERO ===== -->
+        <header id="hero" class="relative min-h-screen flex items-center justify-center overflow-hidden">
+            <div class="absolute inset-0">
+                <img src="img/hero.jpg" alt="Campo de flores" class="w-full h-full object-cover">
+                <div class="absolute inset-0 bg-gradient-to-br from-forest/90 via-forest/75 to-terra/60"></div>
+            </div>
+            <div id="petalsContainer" class="absolute inset-0 pointer-events-none overflow-hidden"></div>
+            <div class="relative z-10 text-center px-6 max-w-4xl mx-auto">
+                <p class="text-gold-light font-body tracking-[0.3em] uppercase text-sm mb-6 reveal">Artesanía floral desde 2015</p>
+                <h1 class="font-display font-black text-5xl md:text-7xl lg:text-8xl text-white leading-[0.95] mb-8 reveal" style="transition-delay:0.15s">
+                    Flores que<br><span class="text-gold">dicen todo</span>
+                </h1>
+                <p class="text-white/70 font-light text-lg md:text-xl max-w-2xl mx-auto mb-10 reveal" style="transition-delay:0.3s">
+                    Cada arreglo es una composición única, creada con flores frescas seleccionadas a mano para transformar tus momentos en recuerdos inolvidables.
+                </p>
+                <div class="flex flex-col sm:flex-row gap-4 justify-center reveal" style="transition-delay:0.45s">
+                    <a href="#catalogo" class="btn-primary text-center">Ver Colección</a>
+                    <a href="#registro" class="btn-outline text-center">Registrarse</a>
+                </div>
+            </div>
+            <div class="absolute bottom-8 left-1/2 -translate-x-1/2 scroll-indicator">
+                <i class="fa-solid fa-chevron-down text-white/40 text-xl"></i>
+            </div>
+        </header>
+
+        <!-- ===== CATÁLOGO ===== -->
+        <section id="catalogo" class="py-24 px-6">
+            <div class="max-w-7xl mx-auto">
+                <div class="text-center mb-16 reveal">
+                    <p class="text-terra font-body tracking-[0.2em] uppercase text-sm mb-3">Nuestra colección</p>
+                    <h2 class="font-display font-bold text-4xl md:text-5xl text-charcoal">Arreglos Exclusivos</h2>
+                    <div class="w-20 h-0.5 bg-gold mx-auto mt-6"></div>
+                </div>
+                <div class="relative reveal">
+                    <div id="carouselTrack" class="carousel-track flex gap-6 lg:gap-8 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-2 -mx-6 px-6">
+                        <!-- Productos insertados por JS -->
+                    </div>
+                    <button id="carPrev" class="carousel-arrow left-0" aria-label="Anterior">
+                        <i class="fa-solid fa-chevron-left"></i>
+                    </button>
+                    <button id="carNext" class="carousel-arrow right-0" aria-label="Siguiente">
+                        <i class="fa-solid fa-chevron-right"></i>
+                    </button>
+                </div>
+            </div>
+        </section>
+
+        <!-- ===== REGISTRO DE CLIENTES ===== -->
+        <section id="registro" class="py-24 px-6 bg-cream-dark">
+            <div class="max-w-4xl mx-auto">
+                <div class="text-center mb-12 reveal">
+                    <p class="text-terra font-body tracking-[0.2em] uppercase text-sm mb-3">Únete a nosotros</p>
+                    <h2 id="registroTitle" class="font-display font-bold text-4xl md:text-5xl text-charcoal">Registro de Cliente</h2>
+                    <div class="w-20 h-0.5 bg-gold mx-auto mt-6"></div>
+                    <p id="registroSubtitle" class="text-muted mt-4 max-w-xl mx-auto">Crea tu cuenta para recibir ofertas personalizadas, seguimiento de pedidos y una experiencia de compra optimizada.</p>
+                </div>
+
+                <!-- Leyenda de clasificación -->
+                <div class="flex flex-wrap justify-center gap-3 mb-10 reveal">
+                    <span class="tag-publico text-xs font-bold px-3 py-1 rounded-full">PÚBLICO</span>
+                    <span class="tag-semiprivado text-xs font-bold px-3 py-1 rounded-full">SEMIPRIVADO</span>
+                    <span class="tag-privado text-xs font-bold px-3 py-1 rounded-full">PRIVADO</span>
+                    <span class="tag-sensible text-xs font-bold px-3 py-1 rounded-full">SENSIBLE</span>
+                </div>
+
+                <form id="customerForm" class="bg-white rounded-2xl shadow-lg shadow-forest/5 p-8 md:p-12 reveal" novalidate>
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+
+                        <!-- Datos Públicos -->
+                        <div>
+                            <label class="flex items-center gap-2 mb-2 text-sm font-bold text-charcoal">
+                                Nombre completo <span class="tag-publico text-[10px] px-2 py-0.5 rounded-full">PÚBLICO</span>
+                            </label>
+                            <input type="text" name="nombre" required placeholder="Ej: María García López"
+                                class="w-full border border-bord rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20 transition">
+                        </div>
+                        <div>
+                            <label class="flex items-center gap-2 mb-2 text-sm font-bold text-charcoal">
+                                Correo electrónico <span class="tag-publico text-[10px] px-2 py-0.5 rounded-full">PÚBLICO</span>
+                            </label>
+                            <input type="email" name="email" required placeholder="maria@correo.com"
+                                class="w-full border border-bord rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20 transition">
+                        </div>
+
+                        <!-- Datos Sensibles: credenciales -->
+                        <div id="passWrap">
+                            <label class="flex items-center gap-2 mb-2 text-sm font-bold text-charcoal">
+                                Contraseña <span class="tag-sensible text-[10px] px-2 py-0.5 rounded-full">SENSIBLE</span>
+                            </label>
+                            <input type="password" name="password" required minlength="8" placeholder="Crea una contraseña segura"
+                                class="w-full border border-bord rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-terra focus:ring-2 focus:ring-terra/20 transition">
+                            <p class="text-xs text-muted mt-2">Mínimo 8 caracteres, con al menos una mayúscula, una minúscula y un número.</p>
+                        </div>
+                        <div id="pass2Wrap">
+                            <label class="flex items-center gap-2 mb-2 text-sm font-bold text-charcoal">
+                                Confirmar contraseña <span class="tag-sensible text-[10px] px-2 py-0.5 rounded-full">SENSIBLE</span>
+                            </label>
+                            <input type="password" name="password2" required placeholder="Repite tu contraseña"
+                                class="w-full border border-bord rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-terra focus:ring-2 focus:ring-terra/20 transition">
+                        </div>
+
+                        <!-- Cambio de contraseña opcional (solo modo perfil) -->
+                        <div id="passChangeRow" class="hidden md:col-span-2 -mt-2">
+                            <label class="flex items-center gap-2 text-sm text-muted cursor-pointer">
+                                <input type="checkbox" id="changePassCheck" class="w-4 h-4 accent-leaf rounded">
+                                Quiero cambiar mi contraseña
+                            </label>
+                        </div>
+
+                        <!-- Datos Semiprivados -->
+                        <div>
+                            <label class="flex items-center gap-2 mb-2 text-sm font-bold text-charcoal">
+                                Teléfono <span class="tag-semiprivado text-[10px] px-2 py-0.5 rounded-full">SEMIPRIVADO</span>
+                            </label>
+                            <input type="tel" name="telefono" required placeholder="+57 300 123 4567"
+                                class="w-full border border-bord rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20 transition">
+                        </div>
+                        <div>
+                            <label class="flex items-center gap-2 mb-2 text-sm font-bold text-charcoal">
+                                Dirección de entrega <span class="tag-semiprivado text-[10px] px-2 py-0.5 rounded-full">SEMIPRIVADO</span>
+                            </label>
+                            <input type="text" name="direccion" required placeholder="Calle, número, colonia, ciudad"
+                                class="w-full border border-bord rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20 transition">
+                        </div>
+
+                        <!-- Datos Privados -->
+                        <div>
+                            <label class="flex items-center gap-2 mb-2 text-sm font-bold text-charcoal">
+                                Fecha de nacimiento <span class="tag-privado text-[10px] px-2 py-0.5 rounded-full">PRIVADO</span>
+                            </label>
+                            <input type="date" name="nacimiento"
+                                class="w-full border border-bord rounded-lg px-4 py-3 text-sm text-muted focus:outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20 transition">
+                        </div>
+                        <div>
+                            <label class="flex items-center gap-2 mb-2 text-sm font-bold text-charcoal">
+                                Preferencias florales <span class="tag-privado text-[10px] px-2 py-0.5 rounded-full">PRIVADO</span>
+                            </label>
+                            <select name="preferencias"
+                                class="w-full border border-bord rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20 transition text-muted">
+                                <option value="">Selecciona tus favoritas</option>
+                                <option value="rosas">Rosas</option>
+                                <option value="lirios">Lirios</option>
+                                <option value="girasoles">Girasoles</option>
+                                <option value="tulipanes">Tulipanes</option>
+                                <option value="orquideas">Orquídeas</option>
+                                <option value="tropicales">Flores tropicales</option>
+                                <option value="mixtas">Mixtas</option>
+                            </select>
+                        </div>
+
+                        <!-- Datos Sensibles -->
+                        <div>
+                            <label class="flex items-center gap-2 mb-2 text-sm font-bold text-charcoal">
+                                Número de identificación <span class="tag-sensible text-[10px] px-2 py-0.5 rounded-full">SENSIBLE</span>
+                            </label>
+                            <input type="text" name="identificacion" placeholder="INE / Pasaporte (opcional)"
+                                class="w-full border border-bord rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-terra focus:ring-2 focus:ring-terra/20 transition">
+                        </div>
+                        <div>
+                            <label class="flex items-center gap-2 mb-2 text-sm font-bold text-charcoal">
+                                Método de pago preferido <span class="tag-sensible text-[10px] px-2 py-0.5 rounded-full">SENSIBLE</span>
+                            </label>
+                            <select name="pago"
+                                class="w-full border border-bord rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-terra focus:ring-2 focus:ring-terra/20 transition text-muted">
+                                <option value="">Selecciona un método</option>
+                                <option value="tarjeta_credito">Tarjeta de crédito</option>
+                                <option value="tarjeta_debito">Tarjeta de débito</option>
+                                <option value="transferencia">Transferencia bancaria</option>
+                                <option value="efectivo">Efectivo contra entrega</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <!-- Aviso de privacidad -->
+                    <div class="mt-8 p-4 bg-cream rounded-xl border border-bord">
+                        <div class="flex items-start gap-3">
+                            <i class="fa-solid fa-shield-halved text-leaf mt-0.5"></i>
+                            <p class="text-xs text-muted leading-relaxed">
+                                Tus datos son tratados conforme a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares.
+                                Los datos <strong class="text-charcoal">públicos</strong> pueden mostrarse en tu perfil visible,
+                                los <strong class="text-charcoal">semiprivados</strong> se comparten solo con el equipo de entregas,
+                                los <strong class="text-charcoal">privados</strong> se usan para personalizar tu experiencia,
+                                las <strong class="text-charcoal">contraseñas</strong> se almacenan únicamente como hash criptográfico (nunca en texto plano)
+                                y los <strong class="text-charcoal">sensibles</strong> se almacenan cifrados de extremo a extremo.
+                            </p>
+                        </div>
+                    </div>
+
+                    <div class="mt-8 flex flex-col sm:flex-row items-center gap-4">
+                        <button type="submit" class="btn-primary w-full sm:w-auto">
+                            <i class="fa-solid fa-user-plus mr-2"></i>Crear Cuenta
+                        </button>
+                        <label class="flex items-center gap-2 text-sm text-muted cursor-pointer">
+                            <input type="checkbox" id="privacyCheck" class="w-4 h-4 accent-leaf rounded">
+                            Acepto el aviso de privacidad
+                        </label>
+                    </div>
+                    <p id="formError" class="mt-4 text-terra text-sm hidden"></p>
+                </form>
+            </div>
+        </section>
+
+        <!-- ===== NOSOTROS ===== -->
+        <section id="nosotros" class="py-24 px-6 bg-forest text-white relative overflow-hidden">
+            <div class="absolute inset-0 opacity-10">
+                <div class="absolute top-10 left-10 w-64 h-64 rounded-full bg-gold blur-3xl"></div>
+                <div class="absolute bottom-10 right-10 w-80 h-80 rounded-full bg-terra blur-3xl"></div>
+            </div>
+            <div class="max-w-6xl mx-auto relative z-10">
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-16 items-center">
+                    <div class="reveal">
+                        <p class="text-gold-light font-body tracking-[0.2em] uppercase text-sm mb-3">Nuestra historia</p>
+                        <h2 class="font-display font-bold text-4xl md:text-5xl mb-6 leading-tight">Diez años cultivando emociones</h2>
+                        <p class="text-white/70 font-light leading-relaxed mb-6">
+                            Flora Elegante nació en 2015 como un pequeño taller floral en el centro de la ciudad. Hoy, somos el referente en arreglos boutique, con un equipo de 25 floristas apasionados que transforman cada encargo en una obra de arte efímera.
+                        </p>
+                        <p class="text-white/70 font-light leading-relaxed mb-8">
+                            Trabajamos directamente con productores locales y fincas certificadas, garantizando frescura, sostenibilidad y un impacto positivo en nuestra comunidad.
+                        </p>
+                        <div class="grid grid-cols-3 gap-6">
+                            <div>
+                                <p class="font-display font-bold text-3xl text-gold">10+</p>
+                                <p class="text-white/50 text-sm mt-1">Años de experiencia</p>
+                            </div>
+                            <div>
+                                <p class="font-display font-bold text-3xl text-gold">15K</p>
+                                <p class="text-white/50 text-sm mt-1">Pedidos entregados</p>
+                            </div>
+                            <div>
+                                <p class="font-display font-bold text-3xl text-gold">98%</p>
+                                <p class="text-white/50 text-sm mt-1">Clientes satisfechos</p>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="reveal" style="transition-delay:0.2s">
+                        <div class="relative">
+                            <img src="img/equipo.jpg" alt="Nuestro equipo de floristas" class="rounded-2xl shadow-2xl w-full object-cover h-[500px]">
+                            <div class="absolute -bottom-6 -left-6 bg-gold text-forest p-6 rounded-xl shadow-lg">
+                                <p class="font-display font-bold text-2xl">25</p>
+                                <p class="text-sm font-bold">Floristas expertos</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="bg-charcoal text-white/60 py-16 px-6">
+        <div class="max-w-7xl mx-auto grid grid-cols-1 md:grid-cols-4 gap-10">
+            <div>
+                <div class="flex items-center gap-3 mb-4">
+                    <img src="img/logo.svg" alt="Ramo de Flora Elegante" class="w-10 h-10">
+                    <span class="font-display font-bold text-lg text-white">Flora Elegante</span>
+                </div>
+                <p class="text-sm leading-relaxed">Transformamos flores en emociones desde 2015. Entregas en toda la ciudad metropolitana.</p>
+            </div>
+            <div>
+                <h4 class="font-bold text-white text-sm uppercase tracking-wider mb-4">Navegación</h4>
+                <ul class="space-y-2 text-sm">
+                    <li><a href="#catalogo" class="hover:text-gold transition">Catálogo</a></li>
+                    <li><a href="#registro" class="hover:text-gold transition">Registro</a></li>
+                    <li><a href="#nosotros" class="hover:text-gold transition">Nosotros</a></li>
+                    <li><a href="login.html" class="hover:text-gold transition">Iniciar sesión</a></li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold text-white text-sm uppercase tracking-wider mb-4">Contacto</h4>
+                <ul class="space-y-2 text-sm">
+                    <li><i class="fa-solid fa-phone text-gold mr-2"></i>+57 55 9876 5432</li>
+                    <li><i class="fa-solid fa-envelope text-gold mr-2"></i>contacto@floraelegante.mx</li>
+                    <li><i class="fa-solid fa-location-dot text-gold mr-2"></i>Av. Reforma 512, Col. Juárez</li>
+                    <li><i class="fa-solid fa-clock text-gold mr-2"></i>Lun-Sáb: 8:00 - 20:00</li>
+                </ul>
+            </div>
+            <div>
+                <h4 class="font-bold text-white text-sm uppercase tracking-wider mb-4">Síguenos</h4>
+                <div class="flex gap-3">
+                    <a href="#" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-gold hover:text-forest transition" aria-label="Facebook"><i class="fa-brands fa-facebook-f"></i></a>
+                    <a href="#" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-gold hover:text-forest transition" aria-label="Instagram"><i class="fa-brands fa-instagram"></i></a>
+                    <a href="#" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-gold hover:text-forest transition" aria-label="TikTok"><i class="fa-brands fa-tiktok"></i></a>
+                    <a href="#" class="w-10 h-10 rounded-full bg-white/10 flex items-center justify-center hover:bg-gold hover:text-forest transition" aria-label="WhatsApp"><i class="fa-brands fa-whatsapp"></i></a>
+                </div>
+                <p class="text-xs mt-6 leading-relaxed">Aviso de privacidad | Términos y condiciones | Política de cookies</p>
+            </div>
+        </div>
+        <div class="max-w-7xl mx-auto mt-10 pt-6 border-t border-white/10 text-center text-xs">
+            2025 Flora Elegante. Todos los derechos reservados.
+        </div>
+    </footer>
+
+    <!-- ===== CHATBOT ===== -->
+    <button id="chatToggle" class="fixed bottom-6 right-6 z-50 w-16 h-16 rounded-full bg-terra text-white shadow-lg flex items-center justify-center text-2xl chat-pulse hover:scale-110 transition-transform cursor-pointer" aria-label="Abrir chat de atención">
+        <i class="fa-solid fa-comments"></i>
+    </button>
+
+    <div id="chatWidget" class="chat-widget closed fixed bottom-24 right-6 z-50 w-[380px] max-w-[calc(100vw-3rem)] bg-white rounded-2xl shadow-2xl shadow-forest/20 overflow-hidden flex flex-col" style="height: 560px;">
+        <!-- Cabecera del chat -->
+        <div class="bg-forest text-white px-5 py-4 flex items-center justify-between flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center overflow-hidden border-2 border-gold/50 flex-shrink-0">
+                    <img src="img/logo.svg" alt="Asistente Flora" class="w-8 h-8">
+                </div>
+                <div>
+                    <p class="font-bold text-sm">Asistente Flora</p>
+                    <p class="text-white/50 text-xs flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-400 inline-block"></span> En línea</p>
+                </div>
+            </div>
+            <button id="chatClose" class="text-white/60 hover:text-white transition text-lg" aria-label="Cerrar chat">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <!-- Mensajes -->
+        <div id="chatMessages" class="flex-1 overflow-y-auto px-5 py-4 space-y-4 bg-cream/50"></div>
+        <!-- Área de entrada -->
+        <div id="chatInputArea" class="p-4 border-t border-bord bg-white flex-shrink-0">
+            <div class="flex gap-2">
+                <input id="chatInput" type="text" placeholder="Escribe tu mensaje..." class="flex-1 border border-bord rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20 transition" autocomplete="off">
+                <button id="chatSend" class="w-12 h-12 rounded-xl bg-forest text-white flex items-center justify-center hover:bg-forest-light transition flex-shrink-0" aria-label="Enviar mensaje">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== CARRITO (panel lateral) ===== -->
+    <div id="cartOverlay" class="fixed inset-0 bg-forest/60 backdrop-blur-sm z-[90] opacity-0 pointer-events-none transition-opacity duration-300"></div>
+    <aside id="cartDrawer" class="fixed top-0 right-0 h-full w-[400px] max-w-[92vw] bg-white z-[95] shadow-2xl translate-x-full transition-transform duration-300 flex flex-col">
+        <div class="bg-forest text-white px-6 py-5 flex items-center justify-between flex-shrink-0">
+            <h3 class="font-display font-bold text-xl"><i class="fa-solid fa-cart-shopping text-gold mr-2"></i>Tu carrito</h3>
+            <button id="cartClose" class="text-white/60 hover:text-white transition text-lg" aria-label="Cerrar carrito">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div id="cartItems" class="flex-1 overflow-y-auto px-6 py-2"></div>
+        <div id="cartEmpty" class="flex-1 hidden flex-col items-center justify-center gap-3 px-6 text-center">
+            <i class="fa-solid fa-basket-shopping text-6xl text-bord"></i>
+            <p class="text-muted text-sm">Tu carrito está vacío.<br>Agrega un arreglo de nuestra colección.</p>
+        </div>
+        <div id="cartFooter" class="border-t border-bord p-6 bg-cream/50 flex-shrink-0">
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-sm font-bold text-charcoal uppercase tracking-wide">Total</span>
+                <span id="cartTotal" class="font-display font-bold text-xl text-forest">$0 COP</span>
+            </div>
+            <p class="text-xs text-muted mb-4"><i class="fa-solid fa-truck-fast text-leaf mr-1"></i>Entrega gratuita en la zona metropolitana.</p>
+            <button id="checkoutBtn" class="btn-primary w-full">
+                <i class="fa-solid fa-bag-shopping mr-2"></i>Finalizar compra
+            </button>
+        </div>
+    </aside>
+
+    <!-- ===== CONTENEDOR DE TOASTS ===== -->
+    <div id="toastContainer" class="fixed top-6 right-6 z-[100] space-y-3 pointer-events-none"></div>
+
+    <script src="js/i18n.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/cart.js"></script>
+    <script src="js/catalog.js"></script>
+    <script src="js/form.js"></script>
+    <script src="js/chatbot.js"></script>
+    <script src="js/report.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

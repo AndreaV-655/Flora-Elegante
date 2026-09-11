@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Análisis - Flora Elegante</title>
+<style>
+body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; color: #1a1a1a; }
+h1 { color: #14532D; font-size: 18pt; page-break-before: always; }
+h2 { color: #2E6B3F; font-size: 14pt; }
+h3 { color: #3D7A54; font-size: 12pt; }
+table, th, td { border: 1px solid #4a4a4a; border-collapse: collapse; }
+th { background-color: #E8F0E6; }
+td, th { padding: 4px 8px; font-size: 9.5pt; vertical-align: top; }
+p { text-align: justify; }
+</style>
+</head>
+<body>
+
+<h1 style="page-break-before: avoid;">1. Objetivo y alcance del análisis</h1>
+
+<h2>1.1 Objetivo</h2>
+<p>Este documento corresponde a la fase de <strong>Análisis</strong> del proyecto Flora Elegante. Su objetivo es transformar la Especificación de Requisitos (Ingeniería de Requerimientos) en un modelo analítico completo y coherente que sirva de puente entre el "qué" (requerimientos) y el "cómo" (diseño). En esta fase se estudian el problema de negocio, los actores, los procesos, los datos y el comportamiento esperado del sistema, sin comprometer decisiones de implementación técnica.</p>
+<p>El análisis se realizó siguiendo las buenas prácticas de la ingeniería de software formal: modelo de casos de uso (UML), especificación narrativa de casos de uso, modelo de dominio, análisis de datos y flujos de información, análisis del comportamiento del chatbot, definición de reglas de negocio y matriz de riesgos. La entrega de esta fase es la entrada principal del documento de Diseño.</p>
+
+<h2>1.2 Alcance</h2>
+<p>El análisis cubre los módulos funcionales acordados: comercio electrónico (catálogo, carrito, pedidos, inventario), gestión de clientes con clasificación de datos, chatbot de atención, reporte mensual, panel administrativo y CRM. Excluye los elementos declarados fuera de alcance en la fase de requerimientos.</p>
+
+<h1>2. Contexto y análisis del problema</h1>
+
+<h2>2.1 Descripción del problema</h2>
+<p>La florería Flora Elegante enfrenta tres problemas operativos que motivan el proyecto:</p>
+<ol>
+<li><strong>Canal de venta limitado:</strong> los pedidos se atienden por teléfono y en mostrador; fuera de horario no hay forma de que el cliente conozca el catálogo ni precios, y no existe control automático de inventario durante la atención, lo que provoca rechazos tardíos y errores en el despacho.</li>
+<li><strong>Datos de clientes no estructurados:</strong> los datos de los clientes se capturan en libretas y hojas de cálculo, sin diferenciar la sensibilidad de cada dato (públicos, semiprivados, privados, sensibles), lo que expone a la empresa a incumplimientos de la LFPDPPP y dificulta la gestión de consentimientos.</li>
+<li><strong>Sin medición de la calidad del servicio:</strong> la administración no dispone de información objetiva sobre cuántas personas son atendidas, cómo califican el servicio ni qué recomiendan los clientes para mejorar; las decisiones de mejora se toman sin evidencia.</li>
+</ol>
+
+<h2>2.2 Solución propuesta</h2>
+<p>El sistema resuelve los tres problemas mediante: (1) un sitio web con catálogo, carrito y pedidos en línea con validación transaccional de inventario, disponible 24/7; (2) un formulario de registro/perfil que etiqueta y clasifica cada dato personal, con aviso de privacidad obligatorio y tratamiento diferenciado en el CRM (enmascarado de sensibles); y (3) un chatbot que atiende consultas, captura calificaciones (1-5) y sugerencias, y alimenta un reporte mensual con los tres bloques: personas atendidas, calificación y recomendaciones para la administración.</p>
+
+<h2>2.3 Análisis de viabilidad</h2>
+<table>
+<tr><th>Dimensión</th><th>Análisis</th><th>Veredicto</th></tr>
+<tr><td>Técnica</td><td>Tecnologías maduras y conocidas (PHP, MySQL, HTML/JS), entorno XAMPP gratuito, sin dependencias de servicios de terceros para la funcionalidad central.</td><td>Viable</td></tr>
+<tr><td>Operativa</td><td>El personal administrativo ya cuenta con navegador y conocimientos básicos; el chatbot reduce carga del equipo de atención; el reporte es automático.</td><td>Viable</td></tr>
+<tr><td>Económica</td><td>Costos de licenciamiento nulos (stack open source, imágenes libres Unsplash/Openverse). Costo principal: horas de desarrollo y capacitación.</td><td>Viable</td></tr>
+<tr><td>Legal</td><td>Cumplimiento LFPDPPP mediante clasificación de datos, consentimiento, aviso de privacidad y enmascarado de sensibles. No hay almacenamiento de datos financieros reales en esta versión (el cobro se hará contra entrega o por métodos externos).</td><td>Viable con controles</td></tr>
+</table>
+
+<h1>3. Modelo de actores</h1>
+<p>Se identifican tres actores primarios y un actor secundario, descritos en la fase de requerimientos. Para el análisis de casos de uso se formalizan sus metas y relaciones:</p>
+<table>
+<tr><th>Actor</th><th>Metas representativas</th><th>Casos de uso en los que participa</th></tr>
+<tr><td>Visitante</td><td>Conocer el catálogo y precios; recibir atención automática; registrarse.</td><td>CU-01, CU-03, CU-07, CU-08</td></tr>
+<tr><td>Cliente</td><td>Comprar; consultar su historial y perfil; calificar el servicio; aportar sugerencias.</td><td>CU-01, CU-02, CU-04, CU-05, CU-06, CU-07, CU-08, CU-14</td></tr>
+<tr><td>Administrador</td><td>Operar el negocio: catálogo, pedidos, inventario, reporte y CRM.</td><td>CU-02, CU-10, CU-11, CU-12, CU-13</td></tr>
+<tr><td>Sistema</td><td>Ejecutar reglas de negocio e integridad (cálculos, validaciones, métricas).</td><td>Transversal a todos los casos de uso.</td></tr>
+</table>
+
+<h1>4. Casos de uso del sistema</h1>
+
+<h2>4.1 Diagrama de casos de uso (descripción)</h2>
+<p>El diagrama de casos de uso agrupa catorce casos de uso distribuidos en tres áreas: (a) acceso y cliente (registro, login, catálogo, carrito, pedido, historial, chatbot, calificación/sugerencia, perfil), (b) administración (panel, CRUD productos, gestión de pedidos, gestión de inventario, reporte mensual, CRM) y (c) sistema (mantenimiento de catálogo por sincronización con BD). El diagrama se documenta formalmente en el repositorio (diagramas/diagrama_er.puml y diagrama_arquitectura.puml) y su referencias de arquitectura se describen en la fase de diseño.</p>
+
+<h2>4.2 Catálogo de casos de uso</h2>
+<table>
+<tr><th>ID</th><th>Nombre</th><th>Actor primario</th><th>Descripción breve</th></tr>
+<tr><td>CU-01</td><td>Registro de cliente</td><td>Visitante</td><td>El visitante crea su cuenta y perfil clasificado aceptando el aviso de privacidad.</td></tr>
+<tr><td>CU-02</td><td>Inicio y cierre de sesión</td><td>Cliente / Administrador</td><td>Autenticación con correo y contraseña; control por rol.</td></tr>
+<tr><td>CU-03</td><td>Navegar catálogo</td><td>Visitante / Cliente</td><td>Consulta del catálogo activo con detalle de productos.</td></tr>
+<tr><td>CU-04</td><td>Gestionar carrito</td><td>Visitante / Cliente</td><td>Agrega, modifica y elimina productos; consulta total.</td></tr>
+<tr><td>CU-05</td><td>Realizar pedido</td><td>Cliente</td><td>Confirma el carrito; el sistema valida stock y descuenta inventario.</td></tr>
+<tr><td>CU-06</td><td>Consultar historial de pedidos</td><td>Cliente</td><td>Visualiza sus pedidos y estados.</td></tr>
+<tr><td>CU-07</td><td>Conversar con el chatbot</td><td>Visitante / Cliente</td><td>Consultas sobre catálogo, precios, entregas, pagos, ocasiones y carrito.</td></tr>
+<tr><td>CU-08</td><td>Calificar atención y sugerir</td><td>Visitante / Cliente</td><td>Evalúa el servicio (1-5) y deja una sugerencia opcional.</td></tr>
+<tr><td>CU-09</td><td>Generar reporte mensual</td><td>Administrador</td><td>Consulta los tres bloques: personas atendidas, calificación y recomendaciones.</td></tr>
+<tr><td>CU-10</td><td>Gestionar panel y CRM</td><td>Administrador</td><td>Accede al dashboard, estadísticas y clientes con datos protegidos.</td></tr>
+<tr><td>CU-11</td><td>Gestionar productos (CRUD)</td><td>Administrador</td><td>Alta, edición, baja y listado de productos.</td></tr>
+<tr><td>CU-12</td><td>Gestionar pedidos</td><td>Administrador</td><td>Lista todos los pedidos y cambia estados.</td></tr>
+<tr><td>CU-13</td><td>Gestionar inventario</td><td>Administrador</td><td>Consulta stock, alertas y actualiza cantidades.</td></tr>
+<tr><td>CU-14</td><td>Gestionar perfil propio</td><td>Cliente</td><td>Consulta y actualiza sus datos; cambia contraseña.</td></tr>
+</table>
+
+<h2>4.3 Especificación de casos de uso (formato extendido)</h2>
+<p>Por su criticidad se detallan los siguientes casos de uso con el formato extendido (precondiciones, flujo principal, flujos alternativos, reglas de negocio y postcondiciones).</p>
+
+<h3>CU-01 Registro de cliente</h3>
+<table>
+<tr><th>Elemento</th><th>Detalle</th></tr>
+<tr><td>Actores</td><td>Visitante.</td></tr>
+<tr><td>Precondiciones</td><td>El visitante accede a la sección de registro del sitio; no tiene sesión activa.</td></tr>
+<tr><td>Flujo principal</td><td>1. El visitante accede a index.html#registro. 2. Completa los campos: nombre completo, correo, contraseña y confirmación, teléfono, dirección, fecha de nacimiento, preferencias, identificación y método de pago. 3. Cada campo muestra su clasificación (PÚBLICO/SEMIPRIVADO/PRIVADO/SENSIBLE). 4. Acepta el aviso de privacidad. 5. Envía el formulario. 6. El frontend valida los campos; si hay errores, los señala en línea. 7. El backend verifica el correo (unicidad y formato) y la política de contraseñas. 8. El sistema crea el usuario (con hash de la contraseña) y el perfil, inicia sesión automáticamente y presenta el mensaje de bienvenida.</td></tr>
+<tr><td>Flujos alternativos</td><td>A1: Correo duplicado → error «Ya existe una cuenta con ese correo» (409). A2: Contraseña no cumple política → error con detalle. A3: Aviso de privacidad no aceptado → error global «Debes aceptar el aviso de privacidad». A4: Campos inválidos → el primer campo inválido recibe foco y se marcan todos los errores en línea.</td></tr>
+<tr><td>Reglas de negocio</td><td>RN-01 (clasificación: cada dato se etiqueta según su categoría); RN-02 (consentimiento obligatorio de privacidad); RN-03 (mínimo 8 caracteres + mayúscula + minúscula + dígito); RN-04 (correo único).</td></tr>
+<tr><td>Postcondiciones</td><td>Existe un registro en usuario (rol cliente) y cliente_perfil; la sesión del cliente está activa.</td></tr>
+</table>
+
+<h3>CU-05 Realizar pedido</h3>
+<table>
+<tr><th>Elemento</th><th>Detalle</th></tr>
+<tr><td>Actores</td><td>Cliente (autenticado).</td></tr>
+<tr><td>Precondiciones</td><td>El cliente tiene sesión iniciada y productos en el carrito.</td></tr>
+<tr><td>Flujo principal</td><td>1. El cliente abre el carrito y pulsa confirmar compra. 2. El frontend envía los ítems (id + cantidad) a api/orders.php?action=create. 3. El backend inicia una transacción. 4. Para cada producto, bloquea la fila (SELECT ... FOR UPDATE), valida el stock y suma el total. 5. Inserta el pedido con estado «Confirmado». 6. Inserta los detalles y actualiza el stock (stock = stock - cantidad). 7. Confirma la transacción. 8. Muestra el número de pedido y el total; vacía el carrito.</td></tr>
+<tr><td>Flujos alternativos</td><td>A1: Stock insuficiente en algún producto → revierte la transacción y muestra «Stock insuficiente... Verifica tu carrito». A2: Sin autenticación → 401. A3: Ítems vacíos o inválidos → 400.</td></tr>
+<tr><td>Reglas de negocio</td><td>RN-05 (el inventario se descuenta solo al confirmar); RN-06 (el pedido inicia en estado Confirmado); RN-07 (total = Σ precio × cantidad); RN-08 (sqlite cantidad > 0).</td></tr>
+<tr><td>Postcondiciones</td><td>Pedido y detalles persistidos; inventario decrementado; el histórico del cliente muestra el nuevo pedido.</td></tr>
+</table>
+
+<h3>CU-07 Conversar con el chatbot</h3>
+<table>
+<tr><th>Elemento</th><th>Detalle</th></tr>
+<tr><td>Actores</td><td>Visitante o Cliente.</td></tr>
+<tr><td>Precondiciones</td><td>Widget de chat visible en la página.</td></tr>
+<tr><td>Flujo principal</td><td>1. El usuario abre el chat. 2. «Flora» saluda y presenta capacidades con respuestas rápidas. 3. El usuario escribe o pulsa una respuesta rápida. 4. El motor analiza la intención (normalización de tildes), selecciona la respuesta y la muestra con indicador de escritura. 5. El usuario continúa la conversación, consulta catálogo, precios, entregas, pagos, ocasiones o el carrito. 6. El usuario indica que terminó; el chatbot solicita la calificación. 7. Acciones de calificación y sugerencia (CU-08).</td></tr>
+<tr><td>Flujos alternativos</td><td>A1: Intención no reconocida → respuesta genérica con opciones. A2: Producto mencionado → ficha del producto con botón «Agregar al carrito». A3: Ocasión detectada → recomendación de arreglos con tarjetas.</td></tr>
+<tr><td>Reglas de negocio</td><td>RN-09 (intenciones evaluadas en orden definido: carrito → producto → afirmación → ocasión → catálogo → fin → saludo → palabras clave); RN-10 (la calificación y sugerencia se registran en interaccion).</td></tr>
+<tr><td>Postcondiciones</td><td>Conversación completada o en curso; si se calificó, la interacción queda persistida.</td></tr>
+</table>
+
+<h3>CU-09 Generar reporte mensual</h3>
+<table>
+<tr><th>Elemento</th><th>Detalle</th></tr>
+<tr><td>Actores</td><td>Administrador.</td></tr>
+<tr><td>Precondiciones</td><td>Sesión de administrador; existen interacciones en la BD.</td></tr>
+<tr><td>Flujo principal</td><td>1. El administrador entra a admin.html → reporte. 2. Selecciona el mes (últimos 12). 3. Pulsa «Generar reporte». 4. El sistema obtiene las interacciones del mes. 5. Muestra: (a) personas atendidas = número de interacciones con estrellas animadas; (b) calificación promedio, distribución 1-5 en barras y % de satisfacción (calificaciones ≥ 4); (c) lista de sugerencias y tarjetas de recomendaciones automáticas. 6. Si el mes no tiene datos, muestra mensaje de ausencia de datos.</td></tr>
+<tr><td>Flujos alternativos</td><td>A1: Mes sin interacciones → estado vacío claro. A2: Error de red → mensaje de error. A3: Cambio de mes con reporte visible → regeneración automática.</td></tr>
+<tr><td>Reglas de negocio</td><td>RN-11 (satisfacción = % de calificaciones ≥ 4); RN-12 (recomendaciones por umbrales y palabras clave, ver sección 8 de este documento); RN-13 (filtro por prefijo YYYY-MM de la fecha).</td></tr>
+<tr><td>Postcondiciones</td><td>El reporte se muestra y puede consultarse por mes.</td></tr>
+</table>
+
+<h3>CU-10 Gestionar panel y CRM</h3>
+<table>
+<tr><th>Elemento</th><th>Detalle</th></tr>
+<tr><td>Actores</td><td>Administrador.</td></tr>
+<tr><td>Precondiciones</td><td>Sesión de administrador.</td></tr>
+<tr><td>Flujo principal</td><td>1. El administrador entra a admin.html. 2. Ve el dashboard (usuarios, productos, pedidos, inventario bajo, estados, últimos pedidos). 3. Accede al CRM: lista de clientes con teléfono y dirección ocultos («Mostrar datos semiprivados»), edad derivada, y preferencias/identificación/pago como «Protegido».</td></tr>
+<tr><td>Reglas de negocio</td><td>RN-14 (los datos sensibles jamás se incluyen en la respuesta de la API); RN-15 (la fecha de nacimiento solo se expone como edad); RN-16 (semiprivados ocultos por defecto).</td></tr>
+<tr><td>Postcondiciones</td><td>Pantalla de CRM con los datos protegidos según clasificación.</td></tr>
+</table>
+
+<h1>5. Análisis del dominio (modelo conceptual)</h1>
+<p>El modelo de dominio identifica los conceptos principales y sus relaciones. Las entidades persistentes son: Rol, Usuario, ClientePerfil, Categoría, Producto, Pedido, PedidoDetalle e Interacción. A continuación se describen las características relevantes de cada concepto:</p>
+<table>
+<tr><th>Concepto</th><th>Atributos relevantes para el análisis</th><th>Relaciones</th></tr>
+<tr><td>Rol</td><td>Nombre del rol ('cliente' | 'administrador').</td><td>1..N Usuario.</td></tr>
+<tr><td>Usuario</td><td>Nombre (público), correo (público, único), hash de contraseña (sensible), activo, fechas.</td><td>N..1 Rol; 0..1 ClientePerfil; 0..N Pedido; 0..N Interacción.</td></tr>
+<tr><td>ClientePerfil</td><td>Teléfono (semiprivado), dirección (semiprivado), fecha de nacimiento (privado), preferencias (privado), identificación (sensible), método de pago (sensible).</td><td>1..1 Usuario.</td></tr>
+<tr><td>Categoría</td><td>Nombre ES/EN.</td><td>1..N Producto.</td></tr>
+<tr><td>Producto</td><td>Nombre/descripción ES/EN, precio, imagen, stock (inventario), estado.</td><td>N..1 Categoría; 0..N PedidoDetalle.</td></tr>
+<tr><td>Pedido</td><td>Fecha, estado (Confirmado/En camino/Entregado/Cancelado), total.</td><td>N..1 Usuario; 1..N PedidoDetalle.</td></tr>
+<tr><td>PedidoDetalle</td><td>Cantidad, precio unitario.</td><td>N..1 Pedido; N..1 Producto.</td></tr>
+<tr><td>Interacción</td><td>Canal ('chatbot'), fecha, calificación (1-5), sugerencia.</td><td>N..0 Usuario.</td></tr>
+</table>
+
+<h1>6. Análisis de datos y flujos de información</h1>
+
+<h2>6.1 Flujos por caso de uso</h2>
+<table>
+<tr><th>Origen</th><th>Acción</th><th>Datos involucrados</th><th>Destino</th></tr>
+<tr><td>Registro (frontend)</td><td>POST auth/register</td><td>Públicos, semiprivados, privados y sensibles del perfil</td><td>Tablas usuario + cliente_perfil</td></tr>
+<tr><td>Catálogo (frontend)</td><td>GET products/list</td><td>Datos públicos de producto</td><td>Select de producto + categoría (activos)</td></tr>
+<tr><td>Carrito (localStorage)</td><td>Lectura/escritura local</td><td>Productos y cantidades</td><td>Navegador (persistencia local)</td></tr>
+<tr><td>Crear pedido</td><td>POST orders/create</td><td>Ítems de compra, stock, total</td><td>Tablas pedido + pedido_detalle + producto (stock)</td></tr>
+<tr><td>Chatbot → calificación</td><td>POST interactions/save</td><td>Calificación (1-5), sugerencia, usuario opcional</td><td>Tabla interaccion</td></tr>
+<tr><td>Reporte mensual</td><td>GET interactions/list (admin)</td><td>Interacciones del mes</td><td>Cálculos en frontend (report.js)</td></tr>
+<tr><td>CRM</td><td>GET clientes/list (admin)</td><td>Datos públicos + semiprivados + edad; sin sensibles</td><td>Tabla usuario + cliente_perfil (consulta restringida)</td></tr>
+</table>
+
+<h2>6.2 Ciclo de vida de los datos clasificados</h2>
+<ul>
+<li><strong>Captura:</strong> en el registro o la edición del perfil, con etiqueta de clasificación visible y consentimiento.</li>
+<li><strong>Almacenamiento:</strong> en MySQL; las contraseñas como hash; los sensibles en columnas dedicadas que nunca se exponen.</li>
+<li><strong>Consulta por el cliente:</strong> el propio titular puede ver y actualizar sus datos (modo perfil).</li>
+<li><strong>Consulta por el administrador:</strong> el CRM expone públicos siempre; semiprivados bajo acción explícita; privados de forma derivada (edad); sensibles nunca.</li>
+<li><strong>Reporte:</strong> la calificación y sugerencia se agregan sin vincularlas públicamente al titular en el panel.</li>
+</ul>
+
+<h1>7. Análisis del chatbot</h1>
+
+<h2>7.1 Intenciones del alto nivel</h2>
+<p>El análisis metodológico del chatbot («Flora») identificó las siguientes intenciones del usuario y su resolución:</p>
+<table>
+<tr><th>Intención</th><th>Disparadores (ejemplos)</th><th>Respuesta del sistema</th></tr>
+<tr><td>Consultar carrito</td><td>"carrito", "canasta", "mi compra", "cart", "my items"</td><td>Cuenta de artículos y total; botón para abrir el carrito.</td></tr>
+<tr><td>Consultar producto</td><td>Nombre del arreglo (ES/EN) o palabras clave</td><td>Ficha del producto con precio, descripción y botón de agregar.</td></tr>
+<tr><td>Confirmar afirmativo</td><td>"sí", "dale", "agrégalo", "yes", "add it" (tras ver un producto)</td><td>Agrega al carrito el último producto mostrado.</td></tr>
+<tr><td>Ocasión especial</td><td>"cumpleaños", "aniversario", "pésame", "bebé", "mamá", "graduación", "perdón"</td><td>Recomendación de 1-2 arreglos con tarjetas.</td></tr>
+<tr><td>Ver más arreglos</td><td>"más arreglos", "more arrangements"</td><td>Carrusel paginado del catálogo.</td></tr>
+<tr><td>Ver catálogo</td><td>"arreglos", "catálogo", "flores", "ver"</td><td>Carrusel inicial del catálogo.</td></tr>
+<tr><td>Finalizar conversación</td><td>"gracias", "eso es todo", "bye", "nada más"</td><td>Transición a calificación (estrellas).</td></tr>
+<tr><td>Información general</td><td>Precios, entregas, pagos, horarios, garantía, ubicación, cuidados, promociones, eventos, contacto humano</td><td>Respuesta desde base de conocimientos Data.botResponses.</td></tr>
+</table>
+
+<h2>7.2 Máquina de estados del flujo conversacional</h2>
+<p>El análisis del flujo definió la siguiente máquina de estados: <strong>saludo → conversación → calificación → sugerencia → cierre</strong>. Cada estado define las transiciones válidas:</p>
+<table>
+<tr><th>Estado</th><th>Entrada</th><th>Salidas/transiciones</th></tr>
+<tr><td>saludo</td><td>Apertura del widget</td><td>Muestra saludo doble + respuestas rápidas → conversación.</td></tr>
+<tr><td>conversación</td><td>Mensaje del usuario</td><td>Respuesta según intención; permanece en conversación hasta detectar fin.</td></tr>
+<tr><td>calificación</td><td>Detección de fin de conversación</td><td>Muestra control de 5 estrellas; al pulsar una estrella → sugerencia.</td></tr>
+<tr><td>sugerencia</td><td>Calificación seleccionada</td><td>Muestra campo de texto libre y botón enviar; al enviar → registro + cierre.</td></tr>
+<tr><td>cierre</td><td>Sugerencia enviada (o vacía)</td><td>Agradece, notifica registro, ofrece «Nueva consulta» → conversación (reinicida).</td></tr>
+</table>
+
+<h2>7.3 Consideraciones de diseño conversacional</h2>
+<ul>
+<li>La normalización elimina tildes y pasa a minúsculas para robustez («tulipán» = «tulipan»).</li>
+<li>El reconocimiento de productos busca coincidencia por nombre completo y luego por palabras clave de más de 3 caracteres.</li>
+<li>La velocidad de respuesta simula escritura humana con retardos proporcionales a la longitud del mensaje.</li>
+<li>El flujo de calificación/sugerencia puede reiniciarse; la calificación se recuerda en estado local del chat.</li>
+</ul>
+
+<h1>8. Análisis del reporte mensual</h1>
+
+<h2>8.1 Definición de métricas</h2>
+<table>
+<tr><th>Bloque exigido</th><th>Métrica</th><th>Fórmula / método</th></tr>
+<tr><td>a) Personas atendidas</td><td>Cantidad de interacciones del mes</td><td>N = nº de registros de interaccion con fecha YYYY-MM en el mes.</td></tr>
+<tr><td>b) Calificación</td><td>Promedio de calificación</td><td>Promedio de calificaciones 1-5 del mes.</td></tr>
+<tr><td>b) Calificación</td><td>Distribución de estrellas</td><td>Conteo y porcentaje por cada valor (1..5) con barras de ancho proporcional (mínimo visual 8%).</td></tr>
+<tr><td>b) Calificación</td><td>% de satisfacción</td><td>(Nº de calificaciones ≥ 4 / N) × 100.</td></tr>
+<tr><td>c) Recomendaciones</td><td>Umbral global</td><td>Promedio ≥ 4,5 → «Mantener la excelencia»; ≥ 3,5 → «Optimizar la experiencia»; &lt; 3,5 → «Atención urgente».</td></tr>
+<tr><td>c) Recomendaciones</td><td>Umbral de satisfacción</td><td>Si satisfacción &lt; 80%, recomendar encuestas de seguimiento post-servicio.</td></tr>
+<tr><td>c) Recomendaciones</td><td>Análisis de palabras clave</td><td>Búsqueda de términos en las sugerencias: entrega/tardó/llega/tiempo; precio/caro/elevado/costo; variedad/rosas/catálogo/opciones; rastrear/seguimiento/foto; suscripciones/mensual; pago/paypal/digital; instrucciones/siguió/pedido; cumpleaños/infantil/aniversario/recordatorio; puntos/frecuentes/fidelización.</td></tr>
+<tr><td>c) Recomendaciones</td><td>Fomento de retroalimentación</td><td>Si hay menos de 5 sugerencias en el mes, recomendar incentivos para aumentar la tasa de respuesta.</td></tr>
+<tr><td>c) Recomendaciones</td><td>Celebración</td><td>Si promedio ≥ 4,5 y satisfacción ≥ 85% y no han disparado otras recomendaciones, recomendar compartir resultados con el equipo.</td></tr>
+</table>
+
+<h2>8.2 Interpretación analítica para la administración</h2>
+<p>El reporte convierte datos crudos en decisiones: las sugerencias se agrupan por temas (logística, precios, catálogo, digital, suscripciones, pagos, cumplimiento, ocasiones, fidelización), y cada tema dispara una recomendación con acción concreta (p. ej., "Mejorar logística de entregas: considerar ampliar el equipo de reparto, implementar rutas optimizadas y ofrecer seguimiento en tiempo real"). Este enfoque garantiza que la administración reciba no solo indicadores, sino planes de acción priorizados automáticamente.</p>
+
+<h1>9. Análisis de requerimientos no funcionales y escenarios de calidad</h1>
+<p>Se concretan los RNF en escenarios de calidad medibles. Un escenario de calidad describe: fuente, estímulo, artefacto, entorno y respuesta observable.</p>
+<table>
+<tr><th>Atributo</th><th>Escenario</th><th>Respuesta esperada</th></tr>
+<tr><td>Seguridad</td><td>Un usuario cliente intenta invocar orders/adminList.</td><td>Respuesta HTTP 403 «Acceso restringido a administradores».</td></tr>
+<tr><td>Seguridad</td><td>Se envía payload con comillas en campos de login.</td><td>Consulta parametrizada; sin excepción de SQL; respuesta JSON correcta.</td></tr>
+<tr><td>Integridad</td><td>Dos clientes piden el último artículo del mismo producto simultáneamente.</td><td>Un pedido se crea; el otro recibe «stock insuficiente»; el stock final es 0 (nunca negativo).</td></tr>
+<tr><td>Usabilidad</td><td>Usuario envía formulario con campos vacíos.</td><td>Errores en línea por campo, primer campo inválido con foco.</td></tr>
+<tr><td>Accesibilidad</td><td>Usuario con prefers-reduced-motion activo genera el reporte.</td><td>El contador muestra el valor final sin animación.</td></tr>
+<tr><td>Eficiencia</td><td>El administrador genera el reporte del mes actual con 15 interacciones.</td><td>El reporte se renderiza sin bloqueos perceptibles.</td></tr>
+</table>
+
+<h1>10. Análisis de riesgos</h1>
+<table>
+<tr><th>ID</th><th>Riesgo</th><th>Probabilidad</th><th>Impacto</th><th>Severidad</th><th>Mitigación</th></tr>
+<tr><td>R01</td><td>Incumplimiento de protección de datos (fuga de sensibles).</td><td>Media</td><td>Alto</td><td>Alta</td><td>Enmascarado en API y UI; clasificación por campos; revisión de seguridad; aviso de privacidad.</td></tr>
+<tr><td>R02</td><td>Venta con inventario inconsistente (sobreventa).</td><td>Media</td><td>Alto</td><td>Alta</td><td>Transacciones con FOR UPDATE; validación de stock; CHECK constraints.</td></tr>
+<tr><td>R03</td><td>Acceso no autorizado a funciones de administración.</td><td>Media</td><td>Alto</td><td>Alta</td><td>Autorización por rol en el backend; protección de vistas en el frontend.</td></tr>
+<tr><td>R04</td><td>Inyección SQL o XSS.</td><td>Media</td><td>Alto</td><td>Alta</td><td>PDO parametrizado; salida escapada por plantillas; revisión de cabeceras.</td></tr>
+<tr><td>R05</td><td>Pérdida de datos (BD).</td><td>Baja</td><td>Alto</td><td>Media</td><td>Copias de seguridad programadas; exportación phpMyAdmin; plan de recuperación (Implementación).</td></tr>
+<tr><td>R06</td><td>Reporte mensual con datos insuficientes o vacíos.</td><td>Alta</td><td>Bajo</td><td>Media</td><td>Estado vacío informativo; fomento de retroalimentación; datos demo.</td></tr>
+<tr><td>R07</td><td>Malentendido del chatbot con consultas complejas.</td><td>Alta</td><td>Bajo</td><td>Media</td><td>Respuesta genérica + contactos humanos; evolución continua de la base de conocimientos.</td></tr>
+<tr><td>R08</td><td>Baja adopción por el personal administrativo.</td><td>Media</td><td>Medio</td><td>Media</td><td>Capacitación; manual en Implementación; interfaz intuitiva.</td></tr>
+<tr><td>R09</td><td>Dependencia de imágenes de terceros con licencia restringida.</td><td>Baja</td><td>Bajo</td><td>Baja</td><td>Solo bancos con licencia libre (Unsplash/Openverse).</td></tr>
+</table>
+
+<h1>11. Prototipos y validación del entendimiento</h1>
+<p>Como parte del análisis se validó el entendimiento del problema con la administración mediante el recorrido de los flujos de negocio representados en el sitio: el flujo del visitante (catálogo → chatbot → carrito → registro), el flujo del cliente (login → pedido → historial → perfil) y el flujo del administrador (dashboard → productos → pedidos → reporte → CRM). Se confirmó que el reporte mensual presenta exactamente los tres bloques solicitados (a, b y c) y que la clasificación de datos es visible para el usuario y respetada en el CRM. Los resultados de esta validación quedaron reflejados en la matriz de trazabilidad y en los criterios de aceptación.</p>
+
+<h1>12. Reglas de negocio consolidadas</h1>
+<table>
+<tr><th>ID</th><th>Regla</th><th>Origen</th></tr>
+<tr><td>RN-01</td><td>Cada dato personal se etiqueta y trata según su clasificación (público/semiprivado/privado/sensible).</td><td>Administración / LFPDPPP</td></tr>
+<tr><td>RN-02</td><td>El registro exige aceptar el aviso de privacidad.</td><td>LFPDPPP</td></tr>
+<tr><td>RN-03</td><td>La contraseña debe tener 8+ caracteres con mayúscula, minúscula y número.</td><td>Política de seguridad</td></tr>
+<tr><td>RN-04</td><td>El correo es único y no modificable en perfil.</td><td>Identidad de cuenta</td></tr>
+<tr><td>RN-05</td><td>El inventario se descuenta solo al confirmar el pedido.</td><td>Negocio</td></tr>
+<tr><td>RN-06</td><td>El pedido inicia en «Confirmado»; estados válidos: Confirmado, En camino, Entregado, Cancelado.</td><td>Negocio</td></tr>
+<tr><td>RN-07</td><td>El total del pedido es la suma de precio × cantidad.</td><td>Negocio</td></tr>
+<tr><td>RN-08</td><td>Las cantidades y precios no pueden ser negativos; la calificación solo admite 1-5.</td><td>Integridad</td></tr>
+<tr><td>RN-09</td><td>El chatbot evalúa intenciones en un orden definido para evitar ambigüedad.</td><td>Diseño conversacional</td></tr>
+<tr><td>RN-10</td><td>Toda calificación/sugerencia del chatbot se guarda en interaccion.</td><td>Requisito de reporte</td></tr>
+<tr><td>RN-11</td><td>Satisfacción = % de calificaciones ≥ 4.</td><td>Métrica de negocio</td></tr>
+<tr><td>RN-12</td><td>Las recomendaciones se generan por umbrales y palabras clave.</td><td>Métrica de negocio</td></tr>
+<tr><td>RN-13</td><td>El mes del reporte se filtra por prefijo de fecha YYYY-MM.</td><td>Técnico</td></tr>
+<tr><td>RN-14</td><td>Los datos sensibles jamás se incluyen en respuestas de la API de clientes.</td><td>LFPDPPP</td></tr>
+<tr><td>RN-15</td><td>La fecha de nacimiento solo se expone como edad derivada.</td><td>LFPDPPP</td></tr>
+<tr><td>RN-16</td><td>Semiprivados ocultos por defecto en el CRM.</td><td>LFPDPPP</td></tr>
+<tr><td>RN-17</td><td>El catálogo público solo muestra productos activos.</td><td>Negocio</td></tr>
+<tr><td>RN-18</td><td>Umbral de inventario bajo = 5 unidades.</td><td>Negocio</td></tr>
+</table>
+
+<h1>13. Conclusiones del análisis</h1>
+<p>El análisis confirma que el problema planteado por la administración tiene una solución factible y acotada. Los casos de uso cubren la totalidad de los requerimientos funcionales declarados «Must» y «Should», y las reglas de negocio resuelven las ambigüedades principales: el tratamiento diferenciado de los datos por clasificación, el descuento transaccional del inventario, el flujo conversacional del chatbot y el cálculo del reporte mensual. El análisis de datos evidencia que el esquema de ocho tablas es suficiente y que la clasificación de datos puede implementarse sin exponer los sensibles. Se recomienda proceder a la fase de diseño sobre esta base, integrando las decisiones de arquitectura documentadas en el siguiente entregable.</p>
+
+</body>
+</html>

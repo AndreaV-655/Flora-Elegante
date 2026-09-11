@@ -1,0 +1,142 @@
+@startuml diagrama_er
+title Flora Elegante · Diagrama Entidad-Relación (MySQL)
+
+' ============================================================
+' COLORES DE MARCA
+' ============================================================
+skinparam backgroundColor #FDF6EE
+skinparam shadowing false
+skinparam roundcorner 8
+
+skinparam entity {
+    BackgroundColor #14532D
+    BorderColor #0f3d20
+    FontColor #FFFFFF
+    FontSize 15
+    FontStyle bold
+}
+
+skinparam cardinality {
+    BackgroundColor #F1D4A8
+    FontColor #7A4E1F
+}
+
+' ============================================================
+' ENTORNO PRINCIPAL
+' ============================================================
+package "Módulo de Acceso y Roles" {
+    entity rol {
+        * id : INT <<PK>>
+        --
+        nombre : VARCHAR(30) <<UNIQUE>>
+    }
+
+    entity usuario {
+        * id : BIGINT <<PK>>
+        --
+        nombre : VARCHAR(120)
+        email : VARCHAR(160) <<UNIQUE>>
+        password_hash : VARCHAR(255) <<SENSIBLE>>
+        rol_id : INT <<FK>>
+        activo : TINYINT(1)
+        fecha_registro : DATETIME
+        ultimo_acceso : DATETIME
+    }
+}
+
+' ============================================================
+' PERFIL Y CLASIFICACION DE DATOS
+' ============================================================
+package "Perfil del Cliente (datos clasificados)" {
+    entity cliente_perfil {
+        * usuario_id : BIGINT <<PK, FK>>
+        --
+        telefono : VARCHAR(30) <<SEMIPRIVADO>>
+        direccion : TEXT <<SEMIPRIVADO>>
+        fecha_nacimiento : DATE <<PRIVADO>>
+        preferencias_florales : VARCHAR(60) <<PRIVADO>>
+        identificacion : VARCHAR(40) <<SENSIBLE>>
+        metodo_pago : VARCHAR(40) <<SENSIBLE>>
+        actualizado_en : DATETIME
+    }
+}
+
+' ============================================================
+' CATALOGO
+' ============================================================
+package "Catálogo de Productos" {
+    entity categoria {
+        * id : INT <<PK>>
+        --
+        nombre : VARCHAR(60) <<UNIQUE>>
+        nombre_en : VARCHAR(60)
+    }
+
+    entity producto {
+        * id : INT <<PK>>
+        --
+        categoria_id : INT <<FK>>
+        nombre : VARCHAR(120)
+        nombre_en : VARCHAR(120)
+        descripcion : TEXT
+        descripcion_en : TEXT
+        precio : DECIMAL(10,2)
+        imagen_url : VARCHAR(300)
+        stock : INT <<INVENTARIO>>
+        estado : VARCHAR(20)
+    }
+}
+
+' ============================================================
+' VENTAS: PEDIDOS
+' ============================================================
+package "Ventas: Pedidos" {
+    entity pedido {
+        * id : BIGINT <<PK>>
+        --
+        cliente_id : BIGINT <<FK>>
+        fecha : DATETIME
+        estado : VARCHAR(20)
+        total : DECIMAL(12,2)
+    }
+
+    entity pedido_detalle {
+        * id : BIGINT <<PK>>
+        --
+        pedido_id : BIGINT <<FK>>
+        producto_id : INT <<FK>>
+        cantidad : INT
+        precio_unitario : DECIMAL(10,2)
+    }
+}
+
+' ============================================================
+' INTERACCIONES DEL CHATBOT
+' ============================================================
+package "Interacciones (chatbot → reporte)" {
+    entity interaccion {
+        * id : BIGINT <<PK>>
+        --
+        usuario_id : BIGINT <<FK>>
+        canal : VARCHAR(20)
+        fecha : DATETIME
+        calificacion : TINYINT(1..5)
+        sugerencia : TEXT
+    }
+}
+
+' ============================================================
+' RELACIONES (cardinalidad 1..N con papeles)
+' ============================================================
+rol ||--o{ usuario  : "asigna"
+usuario ||--|| cliente_perfil : "posee"
+
+categoria ||--o{ producto : "agrupa"
+
+usuario ||--o{ pedido : "realiza"
+pedido ||--|{ pedido_detalle : "contiene"
+producto ||--o{ pedido_detalle : "se detalla en"
+
+usuario o--o{ interaccion : "registra"
+
+@enduml

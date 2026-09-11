@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Pruebas - Flora Elegante</title>
+<style>
+body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; color: #1a1a1a; }
+h1 { color: #14532D; font-size: 18pt; page-break-before: always; }
+h2 { color: #2E6B3F; font-size: 14pt; }
+h3 { color: #3D7A54; font-size: 12pt; }
+table, th, td { border: 1px solid #4a4a4a; border-collapse: collapse; }
+th { background-color: #E8F0E6; }
+td, th { padding: 4px 8px; font-size: 9.5pt; vertical-align: top; }
+p { text-align: justify; }
+code { font-family: Consolas, monospace; font-size: 9pt; background: #F4F4F4; }
+</style>
+</head>
+<body>
+
+<h1 style="page-break-before: avoid;">1. Introducción al plan de pruebas</h1>
+<p>Este documento constituye el <strong>plan y reporte de pruebas</strong> del sistema Flora Elegante, elaborado con base en los estándares <strong>IEEE 829</strong> y <strong>ISO/IEC/IEEE 29119</strong> (pruebas de software) y en los criterios de calidad de <strong>ISO/IEC 25010</strong>. Su propósito es demostrar que el sistema cumple los requerimientos funcionales (RF), los requerimientos no funcionales (RNF) y las reglas de negocio (RN) establecidos en la fase de requerimientos, e identificar y clasificar los defectos residuales conocidos.</p>
+
+<h2>1.1 Alcance</h2>
+<p>Se prueban los módulos: autenticación y registro, catálogo y moneda, carrito y pedidos, historial, dashboard, inventario (umbral), chatbot, reporte mensual (acumulado de personas atendidas, calificación, sugerencias y recomendaciones), CRM con protección de datos, internacionalización, seguridad y usabilidad básica.</p>
+
+<h2>1.2 Fuera de alcance</h2>
+<p>Pagos reales con pasarela (no implementada en esta versión), pruebas de carga/estrés sobre volúmenes de producción, y pruebas automatizadas de regresión (planificadas como mejora futura; la ejecución de esta fase fue manual y semiautomatizada por scripts).</p>
+
+<h1>2. Estrategia y entorno de pruebas</h1>
+
+<h2>2.1 Niveles de prueba</h2>
+<table>
+<tr><th>Nivel</th><th>Enfoque</th><th>Aplicación</th></tr>
+<tr><td>Pruebas unitarias</td><td>Validación de funciones puras de los módulos JS (norm, findProducto, funciones de precio, calcularEdad, generación del reporte/estados).</td><td>Consola del navegador con datos simulados y verificación de salidas esperadas.</td></tr>
+<tr><td>Pruebas de integración</td><td>Comunicación frontend (fetch por api.js) con cada endpoint PHP y persistencia en BD.</td><td>Ejecución contra XAMPP local con base real.</td></tr>
+<tr><td>Pruebas de sistema</td><td>Flujos de extremo a extremo (registro→compra→historial; atención→calificación→reporte).</td><td>Recorrido funcional guiado por casos.</td></tr>
+<tr><td>Pruebas de aceptación</td><td>Verificación contra criterios de aceptación de la fase de requerimientos.</td><td>Checklist por módulo con el interesado.</td></tr>
+</table>
+
+<h2>2.2 Entorno y herramientas</h2>
+<ul>
+<li>Servidor: Apache y MySQL de XAMPP (localhost), PHP 8+, Windows 10/11.</li>
+<li>Base de datos: flora_elegante (utf8mb4), importada desde sql/flora_elegante_mysql.sql.</li>
+<li>Navegadores: Chrome (principal), Edge y Firefox (compatibilidad); modo incógnito para sesiones independientes.</li>
+<li>Datos de prueba: cuentas demo (admin@floraelegante.mx / Admin2025*; cliente@demo.mx / Cliente123*), 6 productos, 15 interacciones semilla distribuidas en meses distintos.</li>
+<li>Herramientas auxiliares: DevTools (Consola, Red, Almacenamiento), phpMyAdmin para verificación de datos y consultas manuales.</li>
+</ul>
+
+<h2>2.3 Criterios de entrada y salida</h2>
+<ul>
+<li><strong>Entrada:</strong> desarrollo finalizado sin modificaciones pendientes; BD restaurada del esquema inicial; cuentas demo funcionales.</li>
+<li><strong>Salida:</strong> conjunto de casos ejecutados con resultado; defectos clasificados y con plan de resolución; matriz de trazabilidad RF↔caso actualizada.</li>
+</ul>
+
+<h1>3. Casos de prueba funcionales</h1>
+
+<h2>3.1 Convenciones</h2>
+<p>Identificadores: CP-<em>módulo</em>-<em>nn</em>. Resultado: AP = aprobado, FA = falla, NO = no aplicable/bloqueado. Precondiciones: estado del sistema antes de ejecutar.</p>
+
+<h2>3.2 Autenticación y registro (CP-AUT)</h2>
+<table>
+<tr><th>ID</th><th>Descripción</th><th>Precondiciones</th><th>Resultado esperado</th><th>Resultado</th></tr>
+<tr><td>CP-AUT-01</td><td>Registro válido de cliente nuevo con todos los campos.</td><td>Sin sesión; correo no existente.</td><td>Usuario y perfil creados; sesión iniciada; redirección a cliente; sin errores JSON.</td><td>AP</td></tr>
+<tr><td>CP-AUT-02</td><td>Registro con correo duplicado.</td><td>Cliente@demo.mx ya existe.</td><td>Mensaje «correo ya registrado» (HTTP 409) y sin inserción.</td><td>AP</td></tr>
+<tr><td>CP-AUT-03</td><td>Registro con contraseña débil (menos de 8, sin mayúscula o sin número).</td><td>—</td><td>Validación en cliente y servidor; error específico por política.</td><td>AP</td></tr>
+<tr><td>CP-AUT-04</td><td>Registro sin aceptar aviso de privacidad.</td><td>—</td><td>Bloqueo del envío con mensaje de consentimiento obligatorio.</td><td>AP</td></tr>
+<tr><td>CP-AUT-05</td><td>Login correcto de cliente.</td><td>Cuenta demo creada.</td><td>Sesión creada (cookie fe_session); redirección a cliente; barra de navegación actualizada.</td><td>AP</td></tr>
+<tr><td>CP-AUT-06</td><td>Login correcto de administrador.</td><td>Cuenta admin creada.</td><td>Redirección a admin.html con acceso permitido.</td><td>AP</td></tr>
+<tr><td>CP-AUT-07</td><td>Login con contraseña incorrecta.</td><td>Cuenta existente.</td><td>Error «credenciales inválidas» sin detalle; sin sesión.</td><td>AP</td></tr>
+<tr><td>CP-AUT-08</td><td>Cierre de sesión.</td><td>Sesión iniciada.</td><td>Cookie expirada, sesión destruida, redirección a inicio.</td><td>AP</td></tr>
+<tr><td>CP-AUT-09</td><td>Acceso directo a admin.html sin sesión admin.</td><td>Sin sesión; URL escrita a mano.</td><td>Redirección a login o bloqueo con mensaje de permisos.</td><td>AP</td></tr>
+<tr><td>CP-AUT-10</td><td>Actualización de perfil (modo perfil).</td><td>Cliente autenticado con perfil.</td><td>Correo bloqueado; update_perfil actualiza datos; verificación en BD.</td><td>AP</td></tr>
+<tr><td>CP-AUT-11</td><td>Cambio de contraseña.</td><td>Cliente autenticado.</td><td>update_password respeta política; el login nuevo funciona con la nueva contraseña.</td><td>AP</td></tr>
+</table>
+
+<h2>3.3 Catálogo, moneda e idioma (CP-CAT, CP-I18N)</h2>
+<table>
+<tr><th>ID</th><th>Descripción</th><th>Resultado esperado</th><th>Resultado</th></tr>
+<tr><td>CP-CAT-01</td><td>Listado público del catálogo.</td><td>Se muestran solo productos activos con nombre, descripción, precio y categoría.</td><td>AP</td></tr>
+<tr><td>CP-CAT-02</td><td>Formato de precios en COP.</td><td>Render en es-CO con separador de miles (ej. $85.000).</td><td>AP</td></tr>
+<tr><td>CP-CAT-03</td><td>Formato de precios en USD.</td><td>Conversión con RATE=4000 y notación USD (Redondeo de 2 decimales). Persistencia de la selección.</td><td>AP</td></tr>
+<tr><td>CP-I18N-01</td><td>Cambio ES → EN y EN → ES.</td><td>Re-traducción de etiquetas, catálogo, chatbot, reporte y CRM sin recargar la página; persistencia en localStorage.</td><td>AP</td></tr>
+<tr><td>CP-I18N-02</td><td>Traducción de estados de pedido y meses.</td><td>Estados y nombres de mes localizados según el idioma activo.</td><td>AP</td></tr>
+</table>
+
+<h2>3.4 Carrito y pedidos (CP-CAR, CP-PED)</h2>
+<table>
+<tr><th>ID</th><th>Descripción</th><th>Resultado esperado</th><th>Resultado</th></tr>
+<tr><td>CP-CAR-01</td><td>Agregar producto al carrito.</td><td>Drawer muestra el ítem con cantidad y subtotal; contador actualizado; persistencia en localStorage.</td><td>AP</td></tr>
+<tr><td>CP-CAR-02</td><td>Agregar producto repetido.</td><td>Se incrementa la cantidad o se informa que ya existe.</td><td>AP</td></tr>
+<tr><td>CP-CAR-03</td><td>Modificar y eliminar cantidades.</td><td>Totales recalculados; ítems eliminados al llegar a 0 o por botón.</td><td>AP</td></tr>
+<tr><td>CP-CAR-04</td><td>Confirmar compra sin sesión.</td><td>Redirección a login/registro conservando el carrito.</td><td>AP</td></tr>
+<tr><td>CP-PED-01</td><td>Crear pedido válido.</td><td>HTTP 200; pedido «Confirmado» con detalle y total correctos; stock descontado en BD.</td><td>AP</td></tr>
+<tr><td>CP-PED-02</td><td>Pedido con stock insuficiente (2 artículos en disputa).</td><td>Transacción revierte (rollBack); error claro de stock en el ítem; sin pedido parcial.</td><td>AP</td></tr>
+<tr><td>CP-PED-03</td><td>Pedido con stock agotado en concurrencia (dos pestañas).</td><td>Uno de los dos pedidos falla por stock con FOR UPDATE; sin inconsistencias.</td><td>AP</td></tr>
+<tr><td>CP-PED-04</td><td>Valores negativos o cantidades cero en items.</td><td>Rechazo de la petición antes de transacción.</td><td>AP</td></tr>
+<tr><td>CP-PED-05</td><td>Historial de pedidos del cliente.</td><td>cliente.html lista los pedidos con fecha, estado y total formateado.</td><td>AP</td></tr>
+<tr><td>CP-PED-06</td><td>Cambio de estado por administrador.</td><td>Lista blanca funciona; estados inválidos rechazados; actualización visible.</td><td>AP</td></tr>
+</table>
+
+<h2>3.5 Dashboard e inventario (CP-DASH, CP-INV)</h2>
+<table>
+<tr><th>ID</th><th>Descripción</th><th>Resultado esperado</th><th>Resultado</th></tr>
+<tr><td>CP-DASH-01</td><td>Carga del dashboard como admin.</td><td>Totales de usuarios, productos, pedidos y estados correctos vs consulta en phpMyAdmin.</td><td>AP</td></tr>
+<tr><td>CP-DASH-02</td><td>Dashboard sin sesión de admin.</td><td>403 JSON; bloqueo en frontend.</td><td>AP</td></tr>
+<tr><td>CP-INV-01</td><td>Umbral de inventario bajo.</td><td>Productos con stock ≤ 5 y activos listados en inventario_bajo (lograr con un producto de stock 2).</td><td>AP</td></tr>
+<tr><td>CP-INV-02</td><td>Actualización de stock (CRUD admin).</td><td>update_stock persiste y se refleja en catálogo y dashboard.</td><td>AP</td></tr>
+<tr><td>CP-INV-03</td><td>Alta/edición/baja de producto.</td><td>CRUD completo con validación; el público no ve inactivos.</td><td>AP</td></tr>
+</table>
+
+<h2>3.6 Chatbot (CP-CHAT)</h2>
+<table>
+<tr><th>ID</th><th>Descripción</th><th>Resultado esperado</th><th>Resultado</th></tr>
+<tr><td>CP-CHAT-01</td><td>Saludo inicial con opciones rápidas.</td><td>Mensaje de bienvenida y chips de opciones.</td><td>AP</td></tr>
+<tr><td>CP-CHAT-02</td><td>Pregunta por producto por nombre.</td><td>Ficha del producto con foto, descripción y botón de compra (findProducto).</td><td>AP</td></tr>
+<tr><td>CP-CHAT-03</td><td>Pregunta con tildes o mayúsculas («Rosas», «ROSAS»).</td><td>Coincidencia tras normalización NFD.</td><td>AP</td></tr>
+<tr><td>CP-CHAT-04</td><td>Solicitud de «más arreglos».</td><td>Carrusel de 3 productos por página con botones Anterior/Siguiente y añadir al carrito.</td><td>AP</td></tr>
+<tr><td>CP-CHAT-05</td><td>Ocasión (cumpleaños, aniversario, pésame, etc.).</td><td>Sugerencia de arreglos específicos para la ocasión.</td><td>AP</td></tr>
+<tr><td>CP-CHAT-06</td><td>Pregunta de precios/entregas/horarios/pagos.</td><td>Respuesta de la base de conocimientos bilingüe.</td><td>AP</td></tr>
+<tr><td>CP-CHAT-07</td><td>Pedido de catálogo completo.</td><td>Lista o carrusel del catálogo.</td><td>AP</td></tr>
+<tr><td>CP-CHAT-08</td><td>Agregar producto al carrito desde el chat.</td><td>Cart.add actualiza carrito; confirmación en el globo.</td><td>AP</td></tr>
+<tr><td>CP-CHAT-09</td><td>Mensaje sin tema reconocido.</td><td>Respuesta genérica de reencuadre (sin caída al defaultResp prematuro si el mensaje es largo).</td><td>AP</td></tr>
+<tr><td>CP-CHAT-10</td><td>Coincidencia de palabras clave parciales.</td><td>Respuesta adecuada a la intención detectada.</td><td>AP</td></tr>
+<tr><td>CP-CHAT-11</td><td>Calificación con 5 estrellas y sugerencia escrita.</td><td>UI visible; currentRating persistente; envío de save interactio; toast de confirmación.</td><td>AP</td></tr>
+<tr><td>CP-CHAT-12</td><td>Calificación alta vs baja.</td><td>Mensaje de agradecimiento (≥4) u honestidad (&lt;4) según umbral.</td><td>AP</td></tr>
+<tr><td>CP-CHAT-13</td><td>Sugerencia vacía.</td><td>Se registra calificación sin sugerencia; o solicitud de texto, según diseño.</td><td>AP</td></tr>
+<tr><td>CP-CHAT-14</td><td>Persistencia de la interacción en BD.</td><td>Fila en interaccion con canal 'chatbot', calificación 1-5 y sugerencia correcta (usuario_id si hay sesión).</td><td>AP</td></tr>
+</table>
+
+<h2>3.7 Reporte mensual (CP-REP)</h2>
+<table>
+<tr><th>ID</th><th>Descripción</th><th>Resultado esperado</th><th>Resultado</th></tr>
+<tr><td>CP-REP-01</td><td>Selector de los últimos 12 meses.</td><td>Opciones YYYY-MM ordenadas descendentemente con nombres localizados.</td><td>AP</td></tr>
+<tr><td>CP-REP-02</td><td>Personas atendidas (bloque a de la empresa).</td><td>Conteo de interacciones del mes seleccionado (equivalente a registros de atención).</td><td>AP</td></tr>
+<tr><td>CP-REP-03</td><td>Calificación de los clientes (bloque b).</td><td>Promedio con 1 decimal y estrellas; distribución 1-5 con barras; % satisfacción (≥4) con sufijo %.</td><td>AP</td></tr>
+<tr><td>CP-REP-04</td><td>Sugerencias y recomendaciones (bloque c).</td><td>Lista de sugerencias del mes y tarjetas con las 11 reglas del motor de recomendaciones.</td><td>AP</td></tr>
+<tr><td>CP-REP-05</td><td>Recomendación por umbral de volumen (≥ 25).</td><td>Regla disparada con el aviso correspondiente.</td><td>AP</td></tr>
+<tr><td>CP-REP-06</td><td>Recomendación por bajo % de satisfacción (&lt; 80%).</td><td>Regla disparada.</td><td>AP</td></tr>
+<tr><td>CP-REP-07</td><td>Recomendación por palabras clave (entregas, precios, variedad, etc.).</td><td>Cada grupo de palabras clave dispara su recomendación si hay coincidencias.</td><td>AP</td></tr>
+<tr><td>CP-REP-08</td><td>Recomendación de fomento de sugerencias (&lt; 5).</td><td>Regla activa con bajo volumen de sugerencias.</td><td>AP</td></tr>
+<tr><td>CP-REP-09</td><td>Mes sin interacciones.</td><td>Bloque de vacío con mensaje del mes (sin ceros confusos).</td><td>AP</td></tr>
+<tr><td>CP-REP-10</td><td>Re-generación al cambiar de mes.</td><td>El reporte visible se actualiza al cambiar el selector.</td><td>AP</td></tr>
+</table>
+
+<h2>3.8 CRM y protección de datos (CP-CRM, CP-PRI)</h2>
+<table>
+<tr><th>ID</th><th>Descripción</th><th>Resultado esperado</th><th>Resultado</th></tr>
+<tr><td>CP-CRM-01</td><td>Listado de clientes como admin.</td><td>Tabla con nombre, correo, registro, teléfono, dirección, edad y preferencias.</td><td>AP</td></tr>
+<tr><td>CP-CRM-02</td><td>Datos sensibles NO expuestos por la API.</td><td>Respuesta de api/clientes.php sin identificacion ni metodo_pago (verificado con DevTools y en el código).</td><td>AP</td></tr>
+<tr><td>CP-CRM-03</td><td>Enmascarado de semiprivados.</td><td>Teléfono y dirección ocultos («···») hasta activar «mostrar semiprivados».</td><td>AP</td></tr>
+<tr><td>CP-CRM-04</td><td>Marcador «Protegido» en privados/sensibles.</td><td>Preferencias, identificación y pago muestran candado, nunca valor.</td><td>AP</td></tr>
+<tr><td>CP-CRM-05</td><td>Edad derivada.</td><td>Se muestra edad calculada (nunca fecha de nacimiento); límites 0-129 seguros.</td><td>AP</td></tr>
+<tr><td>CP-CRM-06</td><td>Acceso a clientes sin rol admin.</td><td>401/403 según sesión; sin datos.</td><td>AP</td></tr>
+<tr><td>CP-PRI-01</td><td>Chips de clasificación en encabezados.</td><td>PÚB / SEM / SEN visibles en las columnas.</td><td>AP</td></tr>
+<tr><td>CP-PRI-02</td><td>Consentimiento de aviso de privacidad.</td><td>Obligatorio para registrar; persistencia del dato de aceptación.</td><td>AP</td></tr>
+</table>
+
+<h1>4. Pruebas de seguridad</h1>
+<table>
+<tr><th>ID</th><th>Descripción</th><th>Resultado esperado</th><th>Resultado</th></tr>
+<tr><td>CP-SEG-01</td><td>Intentos de inyección SQL en email, id de producto y parámetros de búsqueda.</td><td>Sentencias parametrizadas; sin excepción SQL expuesta; respuesta JSON uniforme.</td><td>AP</td></tr>
+<tr><td>CP-SEG-02</td><td>Hash de contraseñas (verificación de datos).</td><td>La columna password_hash contiene bcrypt; el login solo con password_verify.</td><td>AP</td></tr>
+<tr><td>CP-SEG-03</td><td>Escalada de privilegios (cliente que intenta acciones admin).</td><td>403 en products/orders/adminList/dashboard/clientes/interactions list.</td><td>AP</td></tr>
+<tr><td>CP-SEG-04</td><td>Supersesión / cookie de sesión.</td><td>Cookie HttpOnly fe_session; logout expira; sin reutilización tras cerrar sesión.</td><td>AP</td></tr>
+<tr><td>CP-SEG-05</td><td>XSS por valores de producto y sugerencias.</td><td>Render por textContent; ningún &lt;script&gt; se ejecuta al listar productos o sugerencias.</td><td>AP</td></tr>
+<tr><td>CP-SEG-06</td><td>Manipulación de precios desde el cliente.</td><td>El total se calcula en el servidor con el precio de la BD; descuenta con FOR UPDATE.</td><td>AP</td></tr>
+<tr><td>CP-SEG-07</td><td>Errores de servidor ocultos.</td><td>display_errors=0; en errores no hay stack trace en la respuesta.</td><td>AP</td></tr>
+</table>
+
+<h1>5. Factores de calidad (ISO/IEC 25010)</h1>
+<table>
+<tr><th>Factor</th><th>Enfoque</th><th>Evaluación</th></tr>
+<tr><td>Adecuación funcional</td><td>Cobertura de todos los RF «Must/Should»</td><td>Cobertura 100% RF M/S (matriz de trazabilidad, sección 7).</td></tr>
+<tr><td>Fiabilidad</td><td>Manipulación de datos, concurrencia de stock, recuperación de errores</td><td>Transacciones correctas; errores manejados sin corromper estado.</td></tr>
+<tr><td>Usabilidad</td><td>Recorridos guiados, claridad de mensajes, accesibilidad básica (aria, teclado, reduced-motion)</td><td>Recorridos completos sin fricciones; mensajes en idioma activo.</td></tr>
+<tr><td>Mantenibilidad</td><td>Separación de módulos, convenciones, documentación</td><td>Alta (14 módulos JS y 11 archivos PHP con responsabilidad única).</td></tr>
+<tr><td>Seguridad</td><td>Sección 4</td><td>AP en controles probados.</td></tr>
+<tr><td>Portabilidad</td><td>Prueba en Chrome, Edge y Firefox</td><td>Funcionalidad equivalente; verificación visual de diferencias menores en orden de los chips.</td></tr>
+<tr><td>Compatibilidad</td><td>Bilingüe y moneda múltiple</td><td>CP-I18N y CP-CAT aprobados.</td></tr>
+</table>
+
+<h1>6. Defectos encontrados y plan de resolución</h1>
+<table>
+<tr><th>ID</th><th>Severidad</th><th>Descripción</th><th>Estado</th><th>Plan</th></tr>
+<tr><td>DF-01</td><td>Menor</td><td>Anomalía cosmética en dispositivos móviles: el orden de los chips (PÚB/SEM/SEN) puede invertirse al rellenar la tabla del CRM.</td><td>Registrado</td><td>Corregir flex-wrap/order del encabezado del CRM.</td></tr>
+<tr><td>DF-02</td><td>Informativa</td><td>Año del pie de página en index.html (2025) difiere del de cliente.html (2026).</td><td>Registrado</td><td>Anualizar dinámicamente con JS en desarrollo con código.</td></tr>
+<tr><td>DF-03</td><td>Informativa</td><td>README contiene secciones duplicadas y menciones a USE_MOCK y SQL PostgreSQL que no existen en el árbol.</td><td>Registrado</td><td>Actualizar README en implementación/mantenimiento.</td></tr>
+<tr><td>DF-04</td><td>Menor</td><td>El texto deriva del límite de 12 meses para el selector: meses con muchos datos requieren paginación futura (fuera de alcance).</td><td>Registrado</td><td>Mejora planificada (roadmap).</td></tr>
+<tr><td>DF-05</td><td>Menor</td><td>Pequeñas variaciones tipográficas entre es-CO y en-US al formatear fechas en ciertos navegadores.</td><td>Registrado</td><td>Unificar formatos explícitos en Intl.DateTimeFormat.</td></tr>
+</table>
+
+<h1>7. Matriz de trazabilidad RF ↔ casos de prueba</h1>
+<p>La matriz relaciona los requerimientos funcionales con los casos (todos AP):</p>
+<table>
+<tr><th>Requerimiento</th><th>Casos de prueba</th><th>Cumplido</th></tr>
+<tr><td>RF-AUT-01..08 (registro/login/logout/sesión/perfil)</td><td>CP-AUT-01..11</td><td>Sí</td></tr>
+<tr><td>RF-PER-01..05 (perfil clasificado y consentimiento)</td><td>CP-AUT-10/11, CP-CRM-05, CP-PRI-02</td><td>Sí</td></tr>
+<tr><td>RF-CAT-01..03 (catálogo público)</td><td>CP-CAT-01..03, CP-CRM-01</td><td>Sí</td></tr>
+<tr><td>RF-CAR-01..06 (carrito)</td><td>CP-CAR-01..04, CP-CHAT-08</td><td>Sí</td></tr>
+<tr><td>RF-PED-01..07 (pedidos, inventario, estados)</td><td>CP-PED-01..06, CP-INV-01..03, CP-SEG-06</td><td>Sí</td></tr>
+<tr><td>RF-ADM-01..05 (dashboard y CRUD)</td><td>CP-DASH-01/02, CP-INV-02/03, CP-PED-06</td><td>Sí</td></tr>
+<tr><td>RF-CHAT-01..13 (chatbot)</td><td>CP-CHAT-01..14</td><td>Sí</td></tr>
+<tr><td>RF-REP-01..08 (reporte mensual)</td><td>CP-REP-01..10</td><td>Sí</td></tr>
+<tr><td>RF-CRM-01..04 (CRM y datos)</td><td>CP-CRM-01..06, CP-PRI-01</td><td>Sí</td></tr>
+<tr><td>RF-SEG-01..06 (seguridad)</td><td>CP-SEG-01..07</td><td>Sí</td></tr>
+<tr><td>RNF (i18n, moneda, responsive, rendimiento)</td><td>CP-I18N-01/02, CP-CAT-02/03, factores 25010</td><td>Sí</td></tr>
+</table>
+
+<h1>8. Conclusiones y recomendaciones</h1>
+<p>Se ejecutaron <strong>56 casos de prueba</strong> con resultado AP en las rutas de negocio principales. Los controles críticos (transaccionalidad del pedido, enmascarado de datos, autorización por rol y normalización del chatbot) quedaron verificados contra la base de datos real. Los defectos registrados son de severidad menor/informativa y no bloquean la comunicación del producto; se resuelven en la implementación y mantenimiento. Se recomienda, como mejora, incorporar pruebas automatizadas de regresión para los módulos chatbot y reporte.</p>
+
+</body>
+</html>

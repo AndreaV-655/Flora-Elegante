@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Desarrollo - Flora Elegante</title>
+<style>
+body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; color: #1a1a1a; }
+h1 { color: #14532D; font-size: 18pt; page-break-before: always; }
+h2 { color: #2E6B3F; font-size: 14pt; }
+h3 { color: #3D7A54; font-size: 12pt; }
+table, th, td { border: 1px solid #4a4a4a; border-collapse: collapse; }
+th { background-color: #E8F0E6; }
+td, th { padding: 4px 8px; font-size: 9.5pt; vertical-align: top; }
+p { text-align: justify; }
+code { font-family: Consolas, monospace; font-size: 9pt; background: #F4F4F4; }
+</style>
+</head>
+<body>
+
+<h1 style="page-break-before: avoid;">1. Objetivo y alcance del desarrollo</h1>
+<p>Este documento describe la <strong>fase de Desarrollo</strong> del sistema Flora Elegante: las convenciones de codificación, la preparación del entorno, la construcción por módulos de backend y frontend, la implementación del chatbot, del reporte mensual y de la seguridad, y las prácticas de calidad y control de versiones aplicadas. El objetivo es dejar constancia de cómo se construyó el sistema a partir de los modelos de análisis y diseño, de manera que sea reproducible, mantenible y auditable.</p>
+
+<h1>2. Convenciones y estándares de codificación</h1>
+
+<h2>2.1 Lenguajes y tecnologías</h2>
+<table>
+<tr><th>Componente</th><th>Tecnología</th><th>Versión/referencia</th></tr>
+<tr><td>Frontend</td><td>HTML5, CSS3, JavaScript (ES6+)</td><td>Navegadores modernos; sin compilación de módulos (IIFE puro).</td></tr>
+<tr><td>Estilos</td><td>Tailwind CSS + hoja propia css/styles.css + Font Awesome</td><td>Tailwind config en js/tailwind-config.js; iconos Font Awesome 6.</td></tr>
+<tr><td>Backend</td><td>PHP</td><td>PHP 8.x, declaración strict_types en el front controller.</td></tr>
+<tr><td>Datos</td><td>MySQL / MariaDB</td><td>MySQL 10.x (XAMPP), cotejamiento utf8mb4_unicode_ci.</td></tr>
+<tr><td>Librerías locales</td><td>vendor/tailwind.js, vendor/fontawesome, vendor/fonts</td><td>Distribución local para funcionar sin CDN.</td></tr>
+</table>
+
+<h2>2.2 Estándares aplicados</h2>
+<ul>
+<li><strong>Nombrado:</strong> archivos en minúsculas con separación por guion bajo (camelCase en funciones); constantes de BD en MAYÚSCULAS (DB_HOST...); IDs/funciones de DOM en español descriptivo.</li>
+<li><strong>Módulos JS:</strong> patrón IIFE (const Modulo = (() => {... return {init}; })()); cada módulo expone únicamente lo necesario (encapsulamiento).</li>
+<li><strong>Separación de capas:</strong> ningún archivo JS accede directamente a la base de datos; todo pasa por api.js. Ningún archivo PHP genera HTML; solo JSON.</li>
+<li><strong>Comentarios:</strong> cabecera por archivo con propósito y responsabilidad; comentarios de sección y de decisiones no triviales (p. ej., FOR UPDATE, normalización de tildes).</li>
+<li><strong>Seguridad por defecto:</strong> sentencias preparadas en toda consulta dinámica; salida de datos por texto (textContent) para mitigar XSS; validación en cliente y en servidor (defensa en profundidad).</li>
+<li><strong>Idempotencia:</strong> scripts SQL y bootstrap ejecutables repetidamente sin romper datos (INSERT IGNORE / ON DUPLICATE KEY UPDATE / IF NOT EXISTS).</li>
+<li><strong>Sin credenciales reales:</strong> config.php usa usuario root sin contraseña (entorno de desarrollo); se documenta la precaución para producción.</li>
+</ul>
+
+<h2>2.3 Estructura del proyecto</h2>
+<pre>
+flora-elegante/
+├── index.html            → sitio público (hero, catálogo, carrito, registro, nosotros, chatbot)
+├── login.html            → inicio de sesión
+├── cliente.html          → historial del cliente y perfil
+├── admin.html            → panel de administración (dashboard, productos, pedidos, reporte, CRM)
+├── css/styles.css        → componentes propios
+├── js/                   → 14 módulos (i18n, data, api, ui, auth, form, catalog, cart,
+│                            historial, admin, report, chatbot, main, tailwind-config)
+├── api/                  → 11 archivos PHP (config, db, helpers, bootstrap, index, auth,
+│                            products, categories, orders, dashboard, clientes, interactions)
+├── sql/flora_elegante_mysql.sql → esquema MySQL completo con datos demo
+├── diagrams/             → diagramas PlantUML (ER y arquitectura)
+├── img/                  → imágenes locales con licencia libre
+└── vendor/               → Tailwind, Font Awesome y fuentes en local
+</pre>
+
+<h1>3. Preparación del entorno de desarrollo</h1>
+
+<h2>3.1 Instalación del entorno</h2>
+<ol>
+<li>Instalación de XAMPP con Apache y MySQL activos.</li>
+<li>Creación de la base de datos flora_elegante con cotejamiento utf8mb4_unicode_ci en phpMyAdmin.</li>
+<li>Importación de sql/flora_elegante_mysql.sql (esquema + datos semilla).</li>
+<li>Copia del proyecto a C:\xampp\htdocs\flora-elegante\.</li>
+<li>Acceso desde http://localhost/flora-elegante/index.html.</li>
+<li>Validación del bootstrap automático: la primera invocación de auth crea roles, usuarios demo y pedidos de ejemplo.</li>
+</ol>
+
+<h2>3.2 Decisiones de configuración</h2>
+<ul>
+<li>api/config.php centraliza las constantes de conexión (DB_HOST, DB_NAME, DB_USER, DB_PASS, DB_CHARSET).</li>
+<li>api/db.php expone db() como singleton PDO; el modo de error es excepción y el modo de fetch es asociativo; EMULATE_PREPARES=false fuerza la preparación real en el servidor.</li>
+<li>El frontend resuelve la URL de la API con new URL('api/index.php', document.baseURI) para funcionar desde cualquier carpeta de htdocs.</li>
+</ul>
+
+<h1>4. Desarrollo del backend</h1>
+
+<h2>4.1 Capa de infraestructura</h2>
+<table>
+<tr><th>Archivo</th><th>Implementación</th></tr>
+<tr><td>api/config.php</td><td>Constantes de conexión a BD (desarrollo local).</td></tr>
+<tr><td>api/db.php</td><td>Función db(): PDO de instancia única con opciones seguras.</td></tr>
+<tr><td>api/helpers.php</td><td>Funciones json_out, json_error, body (parsing JSON), usuario_actual, require_auth($admin=false). La autorización devuelve 401 sin sesión y 403 si el rol no es administrador.</td></tr>
+<tr><td>api/bootstrap.php</td><td>Creación idempotente de roles, cuentas demo y pedidos de ejemplo (seedPedidosDemo). Usa password_hash para las credenciales demo.</td></tr>
+<tr><td>api/index.php</td><td>Front controller con strict_types, display_errors=0, sesión fe_session, cabeceras CORS (incluyendo OPTIONS 204) y mapa de rutas.</td></tr>
+</table>
+
+<h2>4.2 Módulo de autenticación (api/auth.php)</h2>
+<p>Se implementaron siete acciones:
+</p><ul>
+<li><strong>login:</strong> SELECT de usuario con rol por correo y activo=1; password_verify; actualización de ultimo_acceso; creación de $_SESSION['usuario'] con id, nombre, email y rol.</li>
+<li><strong>register:</strong> validaciones (campos obligatorios, FILTER_VALIDATE_EMAIL, política de contraseñas con expresiones regulares /[A-Z]/, /[a-z]/, /\d/ y longitud ≥ 8); detección de duplicados (409); inserción de usuario + cliente_perfil; inicio de sesión automático del nuevo cliente.</li>
+<li><strong>me:</strong> retorna el usuario de la sesión actual.</li>
+<li><strong>logout:</strong> limpia sesión, expira la cookie (time -42000) y destruye la sesión.</li>
+<li><strong>profile:</strong> consulta del perfil del cliente autenticado (incluye metodo_pago solo para el titular, no para otros usuarios).</li>
+<li><strong>update_perfil:</strong> actualiza nombre y usa INSERT ... ON DUPLICATE KEY UPDATE para crear/actualizar el perfil sin destruir datos previos; las columnas sensibles se actualizan pero jamás se exponen en el CRM.</li>
+<li><strong>update_password:</strong> valida nuevamente la política y re-hashea la contraseña.</li>
+</ul>
+
+<h2>4.3 Módulo de productos (api/products.php)</h2>
+<p>CRUD con distinción público/admin: list (solo activos, JOIN con categoría), adminList (todos), create (valida nombre obligatorio), update, update_stock (máximo con 0) y delete (baja física). Todas las acciones de administración se protegen con require_auth(true).</p>
+
+<h2>4.4 Módulo de pedidos (api/orders.php)</h2>
+<p>El punto central del desarrollo es la transacción de crear pedido. Implementación:</p>
+<ol>
+<li>require_auth (solo cliente).</li>
+<li>Validación de items y cantidades positivas.</li>
+<li>beginTransaction.</li>
+<li>Por cada ítem: SELECT id, precio, stock FROM producto WHERE id = ? FOR UPDATE (bloqueo de fila), validación de stock (rollback + error si insuficiente), acumulación del total y registro del producto.</li>
+<li>INSERT de pedido (estado Confirmado, total) y recuperación del id.</li>
+<li>INSERT de pedido_detalle y UPDATE stock = stock - cantidad.</li>
+<li>commit; en Throwable se revierte si hay transacción activa.</li>
+</ol>
+<p>list retorna los pedidos del cliente con su detalle; adminList retorna todos con datos del cliente (nombre, correo); updateEstado valida la lista blanca {Confirmado, En camino, Entregado, Cancelado}.</p>
+
+<h2>4.5 Módulo de dashboard (api/dashboard.php)</h2>
+<p>Consulta agregadas con COUNT y GROUP BY; fetches de productos con stock ≤ 5 y últimos 5 pedidos. Salida JSON con las claves: usuarios, productos_total, productos_activos, pedidos_total, inventario_bajo, umbral_inventario, estados, ultimos_pedidos.</p>
+
+<h2>4.6 Módulo de clientes (api/clientes.php)</h2>
+<p>Consulta SELECT explícita que <strong>no incluye</strong> identificacion ni metodo_pago. Retorna nombre, correo, fecha de registro, teléfono, dirección, fecha de nacimiento y preferencias. La fecha de nacimiento se entrega para calcular la edad en el cliente; la UI nunca la muestra cruda. Protegido con require_auth(true).</p>
+
+<h2>4.7 Módulo de interacciones (api/interactions.php)</h2>
+<p>list (admin) devuelve todas las interacciones; save inserta interacción con canal 'chatbot', calificación normalizada (1-5 o null) y sugerencia (texto o null), vinculando usuario_id solo si hay sesión activa.</p>
+
+<h1>5. Desarrollo del frontend</h1>
+
+<h2>5.1 Páginas HTML</h2>
+<ul>
+<li><strong>index.html:</strong> sitio público con secciones hero, nosotros, catálogo (contenedor renderizado por catalog.js), formulario de registro/perfil (form.js), aviso de privacidad, pie de página, controles de idioma/moneda y el widget de chat.</li>
+<li><strong>login.html:</strong> formulario de acceso con manejo de errores y redirección por rol (admin → admin.html, cliente → cliente.html).</li>
+<li><strong>cliente.html:</strong> vista del cliente con historial, saludo personalizado y acceso al formulario de perfil.</li>
+<li><strong>admin.html:</strong> panel con secciones de dashboard, productos, pedidos, reporte y CRM; controles de idioma/moneda; botón de cierre de sesión.</li>
+</ul>
+
+<h2>5.2 Módulos JavaScript</h2>
+<table>
+<tr><th>Módulo</th><th>Desarrollo / funciones clave</th></tr>
+<tr><td>main.js</td><td>Detección de página (body[data-page]); invocación de I18n.init primero; protegerVista() para impedir acceso a admin.html sin rol admin; precargarCatalogo() con API.cargarCatalogo (mutación de Data.productos para preservar referencias); saludo al cliente.</td></tr>
+<tr><td>api.js</td><td>request() unificado con fetch y credentials same-origin; aviso local si se abre con file://; manejo de errores JSON con res.ok; métodos por dominio: cargarCatalogo, getCategorias, login, register, logout, getSesion, getPerfil, updatePerfil, updatePassword, CRUD productos, getPedidos(Admin), savePedido, updateEstadoPedido, getDashboard, getClientes, getInteracciones, saveInteraccion.</td></tr>
+<tr><td>auth.js</td><td>Gestión de sesión (JSON en localStorage fe_session), login/registro/logout, setSessionPerfil, updatePassword, renderNavAuth para actualizar la barra de navegación, cerrarSesionYRedirigir.</td></tr>
+<tr><td>form.js</td><td>Validación exhaustiva del formulario: nombre completo (≥3 caracteres y con espacio), EMAIL_RE, política de contraseñas, confirmación de contraseñas, teléfono (7-15 dígitos), dirección (≥5 caracteres), fecha de nacimiento no futura, y aviso de privacidad obligatorio. Errores en línea con .field-error-msg y aria-invalid. Modo perfil: correo bloqueado (readOnly), contraseñas ocultas salvo cambio explícito; nunca registra a otra persona.</td></tr>
+<tr><td>catalog.js</td><td>Renderiza tarjetas de productos en el contenedor del catálogo con precio formateado; escucha fe:idioma y fe:moneda para re-render.</td></tr>
+<tr><td>cart.js</td><td>Estado del carrito en localStorage; add (con aviso si ya existe), setQty, remove, clear, count, totalCOP; render del drawer con subtotales y total; confirmación de compra → API.savePedido → manejo de respuesta y limpieza.</td></tr>
+<tr><td>historial.js</td><td>Carga de pedidos del cliente, formato de fechas localizado, tarjetas de pedido con ítems y estados traducidos.</td></tr>
+<tr><td>admin.js</td><td>Render del dashboard con los datos de API.getDashboard; CRUD de productos con modal de edición/alta (propNombre, propPrecio, propStock, categorías) y confirmación de borrado; gestión de pedidos con selector de estado y llamada a updateEstadoPedido; helpers de formato.</td></tr>
+<tr><td>report.js</td><td>Reporte mensual completo (selector de 12 meses, métricas, barras, sugerencias, recomendaciones) y CRM con enmascarado (desarrollado en las secciones 5.3 y 5.4).</td></tr>
+<tr><td>chatbot.js</td><td>Asistente completo (sección 5.3).</td></tr>
+<tr><td>ui.js</td><td>Toasts (showToast), pétalos decorativos, reveal on scroll y menú móvil; respeta prefers-reduced-motion.</td></tr>
+<tr><td>i18n.js</td><td>Diccionario ES/EN, persistencia localStorage, te(es,en), precio(COP/USD, RATE=4000), eventos fe:idioma y fe:moneda; aplicación de traducciones a elementos data-i18n.</td></tr>
+</table>
+
+<h2>5.3 Chatbot «Flora» (js/chatbot.js)</h2>
+<p>6 fases y estado por conversación. Desarrollo destacado:</p>
+<ul>
+<li><strong>Normalización:</strong> función norm() con toLowerCase + normalize('NFD') eliminando marcas diacríticas.</li>
+<li><strong>Reconocimiento:</strong> findProducto() compara nombre ES/EN y cae en coincidencia por palabras &gt; 3 letras.</li>
+<li><strong>Orden de intenciones:</strong> carrito → producto → afirmación sobre lastProduct (regex de "sí/dale/agrégalo/yes/add it") → 7 ocasiones (regex ES/EN) → más arreglos → catálogo → fin de conversación (solo si mensaje corto y tras al menos 2 mensajes) → saludo repetido → botResponses → defaultResp.</li>
+<li><strong>Base de conocimientos:</strong> Data.botResponses con 20+ entradas bilingües y formatPrecio dinámico.</li>
+<li><strong>Carrito desde el chat:</strong> Cart.add(id) y Cart.totalCOP() dentro de las respuestas; botones con onclick que exponen funciones al window.</li>
+<li><strong>Calificación:</strong> showRatingUI genera 5 .star-btn con aria-label; resaltado acumulativo; window.handleRating guarda currentRating, muestra mensaje según umbral (≥4 gracias alta, &lt;4 honestidad) y transiciona a sugerencia.</li>
+<li><strong>Sugerencia:</strong> showSuggestionUI con input y botón; window.handleSuggestion envía API.saveInteraccion con {rating, sugerencia} y muestra toast de confirmación; el texto libre escrito durante la fase de sugerencia se inserta en el input.</li>
+<li><strong>Re-render bilingüe:</strong> listener de fe:idioma actualiza etiquetas de calificación y placeholder de sugerencia.</li>
+</ul>
+
+<h2>5.4 Reporte mensual y CRM (js/report.js)</h2>
+<p><strong>Reporte:</strong> buildMonthOptions (12 meses YYYY-MM con nombres localizados con locale es-CO/en-US), generateReport controla estados (generando/lista), maneja mes vacío (reportEmpty), y render(list) calcula los tres bloques: (a) animateCounter de personas atendidas; (b) promedio con un decimal, estrellas visuales (redondeo Math.round), % satisfacción y barras de distribución con colores por severidad y ancho mínimo 8%; (c) lista de sugerencias con estrella repetida y tarjetas de recomendaciones.</p>
+<p><strong>Motor de recomendaciones:</strong> 11 reglas (umbrales 4,5 y 3,5; satisfacción &lt; 80%; 9 grupos de palabras clave: entregas, precios, variedad, digital, suscripciones, pagos, cumplimiento, ocasiones, fidelización; fomento si &lt; 5 sugerencias; celebración si promedios excelentes sin otras reglas).</p>
+<p><strong>CRM:</strong> renderClientes consume API.getClientesAdmin; calcularEdad deriva la edad (clamp 0-129); sem(v) muestra puntos suspensivos salvo mostrarSemiprivados (control de alternancia); protegido() genera el marcador con candado para preferencias/identificación/pago; encabezados con chips PÚB/SEM/SEN. Los eventos fe:idioma y fe:moneda regeneran tabla y reporte.</p>
+
+<h1>6. Implementación de la seguridad en el código</h1>
+<p>A continuación se resume cómo se trasladaron los controles de diseño (sección 10 del documento de Diseño) al código:</p>
+<table>
+<tr><th>Control</th><th>Evidencia en el código</th></tr>
+<tr><td>Hash de contraseñas</td><td>password_hash($pass, PASSWORD_DEFAULT) en register y update_password; password_verify en login.</td></tr>
+<tr><td>Sentencias preparadas</td><td>Todas las operaciones con datos variables usan prepare/execute con marcadores ?; PDO::ATTR_EMULATE_PREPARES=false.</td></tr>
+<tr><td>Control de acceso</td><td>require_auth(true) en products (acciones de escritura), orders (adminList/updateEstado), dashboard, clientes e interactions (list). El frontend protege admin.html mediante la sesión y redirige.</td></tr>
+<tr><td>Ocultar errores</td><td>ini_set('display_errors','0'); log_errors=1 en api/index.php; excepciones controladas en try/catch de pedidos.</td></tr>
+<tr><td>Cookies de sesión</td><td>session_name('fe_session'); el logout expira la cookie con tiempo negativo.</td></tr>
+<tr><td>Privacidad de datos</td><td>clientes.php no selecciona sensibles; la UI del CRM enmascara; el formulario exige consentimiento.</td></tr>
+<tr><td>Integridad de stock</td><td>Transacción + SELECT ... FOR UPDATE + CHECK (stock >= 0) en la BD.</td></tr>
+<tr><td>Validación de insumos</td><td>Expresiones regulares de contraseña, FILTER_VALIDATE_EMAIL, cast de tipos (int/float), listas blancas de estados y calificación (1-5).</td></tr>
+</table>
+
+<h1>7. Control de versiones y gestión del código</h1>
+
+<h2>7.1 Prácticas aplicadas</h2>
+<ul>
+<li>Control de versiones Git (repositorio local), con commits por módulo y mensajes descriptivos.</li>
+<li>No se versionan binarios innecesarios; las imágenes y vendor son componentes estáticos del despliegue.</li>
+<li>El README del repositorio documenta estructura, puesta en marcha, cuentas demo, requisitos cubiertos y cómo conectar un backend alternativo.</li>
+</ul>
+
+<h2>7.2 Buenas prácticas de calidad (revisión de código)</h2>
+<ul>
+<li>Revisión por pares antes de integrar cada módulo, con checklist de: separación de capas, validaciones de entrada, parametrización de consultas, manejo de errores y mensajes bilingües.</li>
+<li>Verificación de consistencia entre los textos ES/EN (ambos idiomas presentes en I18n.te).</li>
+<li>Verificación de que ninguna consulta SQL se construya por concatenación de datos del usuario.</li>
+<li>Se corrió el sitio bajo phpMyAdmin para validar que las tablas, índices y restricciones quedaron según el diseño.</li>
+</ul>
+
+<h1>8. Hallazgos de desarrollo y su resolución</h1>
+<table>
+<tr><th>ID</th><th>Hallazgo</th><th>Impacto</th><th>Resolución</th></tr>
+<tr><td>HD-01</td><td>Al abrir el sitio con doble clic (file://) el fetch hacia PHP falla silenciosamente.</td><td>Alto (experiencia)</td><td>api.js detecta protocol file: y muestra error explicativo pidiendo usar http://localhost.</td></tr>
+<tr><td>HD-02</td><td>Posible condición de carrera al descontar inventario en pedidos simultáneos.</td><td>Alto (integridad)</td><td>Se implementó SELECT ... FOR UPDATE dentro de una transacción; el segundo pedido con stock agotado recibe error claro.</td></tr>
+<tr><td>HD-03</td><td>La fecha de nacimiento cruda podía filtrarse al panel si se agregaba al clientes.php.</td><td>Alto (privacidad)</td><td>El CRM solo calcula y muestra la edad; advertencia en comentarios del código.</td></tr>
+<tr><td>HD-04</td><td>Los textos de la versión inglesa podían quedar sin traducción en componentes dinámicos.</td><td>Medio</td><td>Mecanismo evento fe:idioma + uso disciplinado de I18n.te en todo render dinámico.</td></tr>
+<tr><td>HD-05</td><td>El catálogo semilla del frontend se desincronizaba con la BD al editar productos.</td><td>Medio</td><td>cargarCatalogo muta Data.productos (length=0 + push) preservando referencias de chatbot y carrito.</td></tr>
+<tr><td>HD-06</td><td>El mes sin datos del reporte mostraba métricas en cero confusas.</td><td>Bajo</td><td>Diseño de estado vacío (reportEmpty) con mensaje y nombre del mes.</td></tr>
+<tr><td>HD-07</td><td>Inconsistencia de año en pies de página (index 2025 vs cliente 2026) y README con secciones duplicadas.</td><td>Bajo (higiene)</td><td>Registrado para corrección en mantenimiento; documentado en la fase de pruebas (defectos).</td></tr>
+</table>
+
+<h1>9. Métricas del desarrollo</h1>
+<table>
+<tr><th>Componente</th><th>Volumen (aprox.)</th></tr>
+<tr><td>Archivos fuente del proyecto</td><td>57 archivos (4 HTML, 14 JS, 11 PHP, 1 SQL, 2 diagramas, CSS, imágenes, vendor).</td></tr>
+<tr><td>Módulos JavaScript</td><td>14 (incluida la configuración de Tailwind).</td></tr>
+<tr><td>Endpoints de la API</td><td>7 recursos · ~22 acciones.</td></tr>
+<tr><td>Tablas de base de datos</td><td>8 (con índices y restricciones CHECK/FK).</td></tr>
+<tr><td>Líneas de chatbot</td><td>≈ 560 líneas (estado, intenciones, render, calificación y sugerencia).</td></tr>
+<tr><td>Líneas de reporte + CRM</td><td>≈ 390 líneas (métricas, recomendaciones y enmascarado).</td></tr>
+</table>
+
+<h1>10. Artefactos generados en el desarrollo</h1>
+<ul>
+<li>Esquema SQL completo con datos demo: sql/flora_elegante_mysql.sql.</li>
+<li>Diagramas de soporte: diagrams/diagrama_er.puml y diagrams/diagrama_arquitectura.puml.</li>
+<li>Catálogo del sitio con 6 productos de referencia y 6 categorías.</li>
+<li>Cuentas demo (admin y cliente) con pedidos de ejemplo y 15 interacciones para el reporte.</li>
+<li>Documentación de puesta en marcha en README.md.</li>
+</ul>
+
+<h1>11. Preparación para la fase de pruebas</h1>
+<p>Con el desarrollo finalizado, se dispuso el sistema con datos semilla reproducibles para la fase de pruebas: cuentas de acceso documentadas, 15 interacciones con calificaciones variadas y sugerencias orientadas a distintos temas (entregas, precios, variedad, rastreo, suscripciones, pagos, cumplimiento, ocasiones, fidelización) para poder verificar las 11 reglas del motor de recomendaciones. La fase siguiente (Pruebas) detalla los casos de prueba, los resultados y la matriz de trazabilidad contra los requerimientos.</p>
+
+</body>
+</html>

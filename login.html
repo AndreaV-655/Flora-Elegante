@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Iniciar Sesión — Flora Elegante</title>
+    <link rel="icon" href="img/logo.svg" type="image/svg+xml">
+    <script src="vendor/tailwind.js"></script>
+    <script src="js/tailwind-config.js"></script>
+    
+    <link href="vendor/fonts/fonts.css" rel="stylesheet">
+    <link rel="stylesheet" href="vendor/fontawesome/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body class="auth-hero min-h-screen flex items-center justify-center px-6 py-12" data-page="login">
+
+    <!-- Círculos decorativos -->
+    <div class="fixed inset-0 pointer-events-none overflow-hidden opacity-20">
+        <div class="absolute top-10 left-10 w-72 h-72 rounded-full bg-gold blur-3xl"></div>
+        <div class="absolute bottom-10 right-10 w-96 h-96 rounded-full bg-terra blur-3xl"></div>
+    </div>
+
+    <div class="relative z-10 w-full max-w-md">
+        <div class="flex items-center justify-end gap-2 mb-3">
+            <button id="langToggle" class="text-xs font-bold px-2.5 py-1.5 rounded-lg border border-white/40 text-white hover:border-gold hover:text-gold transition bg-forest/40">EN</button>
+            <button id="curToggle" class="text-xs font-bold px-2.5 py-1.5 rounded-lg border border-white/40 text-white hover:border-gold hover:text-gold transition bg-forest/40">USD</button>
+        </div>
+        <div class="bg-white rounded-3xl shadow-2xl shadow-forest/40 p-8 md:p-10">
+            <!-- Logo -->
+            <div class="text-center mb-8">
+                <img src="img/logo.svg" alt="Ramo de Flora Elegante" class="w-20 h-20 mx-auto mb-3">
+                <h1 class="font-display font-bold text-3xl text-charcoal">Iniciar Sesión</h1>
+                <p class="text-muted text-sm mt-2">Accede a tu cuenta de Flora Elegante</p>
+            </div>
+
+            <!-- Avisos -->
+            <div id="loginNotice" class="hidden mb-4 p-3 rounded-xl text-sm"></div>
+
+            <!-- Formulario -->
+            <form id="loginForm" novalidate>
+                <div class="mb-5">
+                    <label class="block mb-2 text-sm font-bold text-charcoal">Correo electrónico</label>
+                    <input type="email" name="email" required placeholder="tu@correo.com"
+                        class="w-full border border-bord rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20 transition">
+                </div>
+                <div class="mb-6">
+                    <label class="block mb-2 text-sm font-bold text-charcoal">Contraseña
+                        <span class="tag-sensible text-[10px] px-2 py-0.5 rounded-full ml-1">SENSIBLE</span>
+                    </label>
+                    <input type="password" name="password" required placeholder="Tu contraseña"
+                        class="w-full border border-bord rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-terra focus:ring-2 focus:ring-terra/20 transition">
+                </div>
+                <button type="submit" class="btn-primary w-full">
+                    <i class="fa-solid fa-right-to-bracket mr-2"></i>Entrar
+                </button>
+                <p id="loginError" class="mt-4 text-terra text-sm hidden"></p>
+            </form>
+
+            <!-- Cuentas de demostración -->
+            <div class="mt-6 p-4 bg-cream rounded-xl border border-bord">
+                <p class="text-xs font-bold text-charcoal uppercase tracking-wider mb-3">
+                    <i class="fa-solid fa-flask text-gold mr-1"></i>Cuentas de demostración
+                </p>
+                <div class="space-y-2 text-xs text-muted">
+                    <div class="flex items-center justify-between gap-2">
+                        <span><strong class="text-charcoal">Admin:</strong> admin@floraelegante.mx / Admin2025*</span>
+                        <button type="button" id="fillAdmin" class="text-leaf font-bold hover:text-leaf-light transition whitespace-shrink-0">Usar</button>
+                    </div>
+                    <div class="flex items-center justify-between gap-2">
+                        <span><strong class="text-charcoal">Cliente:</strong> cliente@demo.mx / Cliente123*</span>
+                        <button type="button" id="fillCliente" class="text-leaf font-bold hover:text-leaf-light transition">Usar</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Enlaces -->
+            <div class="mt-6 flex items-center justify-between text-sm">
+                <a href="index.html" class="text-muted hover:text-forest transition"><i class="fa-solid fa-arrow-left mr-1"></i>Tienda</a>
+                <a href="index.html#registro" class="text-leaf font-bold hover:text-leaf-light transition">Crear cuenta</a>
+            </div>
+        </div>
+
+        <p class="text-center text-white/50 text-xs mt-6">
+            <i class="fa-solid fa-lock mr-1"></i>Tus credenciales se transmiten cifradas y se almacenan solo como hash.
+        </p>
+    </div>
+
+    <div id="toastContainer" class="fixed top-6 right-6 z-[100] space-y-3 pointer-events-none"></div>
+
+    <script src="js/i18n.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/catalog.js"></script>
+    <script src="js/form.js"></script>
+    <script src="js/chatbot.js"></script>
+    <script src="js/report.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>

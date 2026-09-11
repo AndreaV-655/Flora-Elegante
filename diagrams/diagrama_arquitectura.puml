@@ -1,0 +1,135 @@
+@startuml diagrama_arquitectura
+title Flora Elegante · Arquitectura del Sistema (XAMPP)
+
+' ============================================================
+' ESTILOS
+' ============================================================
+skinparam backgroundColor #FDF6EE
+skinparam shadowing false
+skinparam roundcorner 8
+skinparam defaultFontSize 13
+
+' Componentes / paquetes / actores
+skinparam component {
+    BackgroundColor #F1D4A8
+    BorderColor #C8995A
+    FontColor #4C2E12
+    FontSize 13
+    FontStyle bold
+}
+skinparam node {
+    BackgroundColor #14532D
+    BorderColor #0f3d20
+    FontColor #FFFFFF
+    FontSize 14
+    FontStyle bold
+}
+skinparam database {
+    BackgroundColor #E8C088
+    BorderColor #B97F3E
+    FontColor #4C2E12
+    FontSize 14
+    FontStyle bold
+}
+skinparam actor {
+    BackgroundColor #FDF6EE
+    BorderColor #C8995A
+    FontColor #4A2E12
+}
+
+' ============================================================
+' ACTORES
+' ============================================================
+actor "Cliente\n(final)" as Cliente
+actor "Administrador" as Admin
+
+' ============================================================
+' CAPA FRONTEND (HTML + CSS + JS) sobre Apache
+' ============================================================
+node "XAMPP · Apache (puerto 80)  →  http://localhost/flora-elegante/" as Frontend {
+    component "Páginas HTML" as Pages {
+        component "index.html" as Index
+        component "login.html" as LoginP
+        component "cliente.html" as CliP
+        component "admin.html" as AdmP
+    }
+    component "Estilos e íconos\ncss/styles.css · Tailwind · FontAwesome" as Css
+    component "Módulos JavaScript" as Js {
+        component "main.js · i18n.js · ui.js" as JsBase
+        component "auth.js · form.js" as JsAuth
+        component "catalog.js · cart.js · historial.js" as JsCat
+        component "admin.js · report.js" as JsAdmin
+        component "chatbot.js" as JsChat
+        component "data.js (catálogo semilla)" as JsData
+        component "api.js (capa de datos / fetch)" as JsApi
+    }
+}
+
+' ============================================================
+' CAPA DE NEGOCIO / API PHP (solo lógica + datos)
+' ============================================================
+node "Backend PHP · API (api/)" as Backend {
+    database "config.php\ndb.php · helpers.php\nbootstrap.php (datos demo)" as Conf
+
+    component "Front Controller\napi/index.php\n?resource=&action=" as FC
+
+    package "Controladores por recurso" {
+        component "auth.php\nlogin · register · me · logout · perfil" as CAuth
+        component "products.php\nCRUD + inventario" as CProd
+        component "categories.php\ncategorías" as CCat
+        component "orders.php\npedidos + cambio de estado" as COrd
+        component "dashboard.php\nestadísticas" as CDash
+        component "clientes.php\nCRM (sensibles enmascarados)" as CCli
+        component "interactions.php\nchatbot → calif./sugerencia" as CInt
+    }
+}
+
+' ============================================================
+' CAPA DE DATOS
+' ============================================================
+database "MySQL · MariaDB\nBase de datos flora_elegante" as DB {
+    component "rol" as T1
+    component "usuario" as T2
+    component "cliente_perfil" as T3
+    component "categoria" as T4
+    component "producto" as T5
+    component "pedido" as T6
+    component "pedido_detalle" as T7
+    component "interaccion" as T8
+}
+
+' ============================================================
+' FLUJOS / RELACIONES
+' ============================================================
+Cliente --> LoginP : "inicia sesión"
+Cliente --> Index : "navega, compra,\ncarrito, chatbot"
+Admin --> AdmP : "gestiona panel"
+
+Pages --> Css : "usa"
+Pages --> Js : "carga módulos"
+JsData --> JsApi : "catálogo"
+JsApi --> FC : "HTTP JSON\n(fetch · GET/POST)"
+JsChat --> FC : "guarda calificación/sugerencia"
+JsAdmin --> FC : "CRUD · reporte · CRM"
+
+FC --> CAuth
+FC --> CProd
+FC --> CCat
+FC --> COrd
+FC --> CDash
+FC --> CCli
+FC --> CInt
+
+Conf --> DB : "PDO (consultas\nparametrizadas)"
+CAuth --> DB
+CProd --> DB
+CCat --> DB
+COrd --> DB
+CDash --> DB
+CCli --> DB
+CInt --> DB
+
+' Sesión PHP por cookie (fe_session) viaja con cada fetch
+JsApi ..> FC : "cookie de sesión fe_session"
+
+@enduml

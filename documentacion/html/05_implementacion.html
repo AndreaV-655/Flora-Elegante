@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Implementación - Flora Elegante</title>
+<style>
+body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; color: #1a1a1a; }
+h1 { color: #14532D; font-size: 18pt; page-break-before: always; }
+h2 { color: #2E6B3F; font-size: 14pt; }
+h3 { color: #3D7A54; font-size: 12pt; }
+table, th, td { border: 1px solid #4a4a4a; border-collapse: collapse; }
+th { background-color: #E8F0E6; }
+td, th { padding: 4px 8px; font-size: 9.5pt; vertical-align: top; }
+p { text-align: justify; }
+code { font-family: Consolas, monospace; font-size: 9pt; background: #F4F4F4; }
+</style>
+</head>
+<body>
+
+<h1 style="page-break-before: avoid;">1. Objetivo de la implantación</h1>
+<p>Este documento define el <strong>plan de implementación</strong> del sistema Flora Elegante: preparación del servidor, instalación de la base de datos, despliegue de los archivos, configuración, migración de datos y usuarios, validación con el negocio (pruebas de aceptación), capacitación, respaldo, plan de rollback, soporte y mantenimiento. El objetivo es llevar el sistema a <strong>producción local </strong> (XAMPP) y dejar lista la operación diaria de la florería: catálogo, ventas, chatbot, reporte mensual y CRM.</p>
+
+<h1>2. Arquitectura destino</h1>
+<p>La implantación se realiza sobre el mismo stack desarrollado: Apache + PHP 8 + MySQL/MariaDB (XAMPP) en un servidor Windows. No se requieren servicios externos: las librerías (Tailwind, Font Awesome, fuentes) están versionadas en la carpeta vendor/, de modo que el sitio funciona incluso sin conexión a internet.</p>
+<table>
+<tr><th>Componente</th><th>Especificación mínima</th><th>Ubicación esperada</th></tr>
+<tr><td>Sistema operativo</td><td>Windows 10/11 o Windows Server</td><td>—</td></tr>
+<tr><td>Servidor web</td><td>Apache 2.4 (XAMPP)</td><td>C:\xampp\htdocs\flora-elegante\</td></tr>
+<tr><td>Intérprete</td><td>PHP 8.x con PDO y extensión pdo_mysql</td><td>Verificado en phpinfo()</td></tr>
+<tr><td>Base de datos</td><td>MySQL/MariaDB (XAMPP)</td><td>flora_elegante (utf8mb4_unicode_ci)</td></tr>
+<tr><td>Navegadores</td><td>Chrome, Edge o Firefox actuales</td><td>Equipos de la florería</td></tr>
+</table>
+
+<h1>3. Plan de instalación</h1>
+
+<h2>3.1 Paso 1 — Verificación de prerrequisitos</h2>
+<ul>
+<li>Verificar que Apache y MySQL están iniciados en el panel de XAMPP (puertos 80 y 3306, sin conflictos).</li>
+<li>Verificar PHP 8 y extensión PDO MySQL con php -v y una página <?php phpinfo(); ?>.</li>
+<li>Confirmar carpeta htdocs escribible por el usuario del sistema.</li>
+</ul>
+
+<h2>3.2 Paso 2 — Instalación de la base de datos</h2>
+<ol>
+<li>Crear la base flora_elegante con cotejamiento utf8mb4_unicode_ci (phpMyAdmin o consola MySQL).</li>
+<li>Importar sql/flora_elegante_mysql.sql: crea las 8 tablas, índices, restricciones y los datos semilla.</li>
+<li>Verificar en phpMyAdmin: número de tablas = 8, productos = 6, categorías = 6 e interacciones = 15.</li>
+</ol>
+
+<h2>3.3 Paso 3 — Copia de archivos</h2>
+<p>Copiar la carpeta del proyecto (index.html, login.html, cliente.html, admin.html, css/, js/, api/, sql/, img/, vendor/, diagrams/) a C:\xampp\htdocs\flora-elegante\. Mantener la estructura interna intacta: las rutas relativas y la resolución dinámica de api/index.php dependen de ella.</p>
+
+<h2>3.4 Paso 4 — Configuración</h2>
+<ul>
+<li>Revisar api/config.php: ajustar DB_USER/DB_PASS si el destino usa credenciales distintas de root.</li>
+<li>Revisar direcciones base: el frontend resuelve la API desde document.baseURI, por lo que basta que la URL pública sea http://localhost/flora-elegante/.</li>
+<li>Revisar el aviso de privacidad con los datos de la florería (responsable, fines, mecanismo de derechos ARCO, contacto).</li>
+</ul>
+
+<h2>3.5 Paso 5 — Pruebas de humo en producción local</h2>
+<ol>
+<li>Abrir http://localhost/flora-elegante/index.html y verificar catálogo, moneda/idioma y chatbot.</li>
+<li>Verificar el bootstrap automático: al hacer login primero (o llamar a auth), se crean roles, cuentas demo y pedidos de ejemplo.</li>
+<li>Verificación de cuentas demo: admin@floraelegante.mx / Admin2025* (panel completo) y cliente@demo.mx / Cliente123* (perfil, historial, reporte).</li>
+<li>Generar un pedido de prueba y verificar descuento de inventario en phpMyAdmin.</li>
+<li>Generar una interacción (calificación y sugerencia) y verificar que el reporte del mes la refleja.</li>
+</ol>
+<p><strong>Recomendación de higiene:</strong> tras la verificación en producción, restablecer/deshabilitar las cuentas demo y limpiar los datos de ejemplo si se desea iniciar operación limpia (ver 4. Migración).</p>
+
+<h1>4. Migración de datos y usuarios</h1>
+
+<h2>4.1 Estrategia</h2>
+<table>
+<tr><th>Origen</th><th>Destino</th><th>Tipo</th><th>Procedimiento</th></tr>
+<tr><td>Catálogo físico (papel)</td><td>categoria, producto</td><td>Manual</td><td>Carga por panel admin (CRUD) o script de inserción validado; precio en COP.</td></tr>
+<tr><td>Clientes existentes</td><td>usuario, cliente_perfil</td><td>Manual con consentimiento</td><td>Reclasificación previa; el cliente confirma su información al primer ingreso (perfil); se respeta el aviso de privacidad.</td></tr>
+<tr><td>Pedidos en curso</td><td>pedido, pedido_detalle</td><td>Manual</td><td>Carga de pedidos "Confirmado"/"En camino" con estado real; stock ya descontado.</td></tr>
+<tr><td>Datos demo</td><td>interaccion, pedidos demo</td><td>Limpieza</td><td>DELETE de interacciones/pedidos demo y desactivación de cuentas demo si se inicia operación real.</td></tr>
+</table>
+
+<h2>4.2 Verificación post-migración</h2>
+<ul>
+<li>Ejecutar el reporte mensual del mes en curso: debe reflejar la operación real (bloques a, b y c).</li>
+<li>Comparar el inventario en el sistema contra el conteo físico con el umbral de reposición (≤ 5) visible en el dashboard.</li>
+<li>Verificar que el CRM no exponga datos sensibles y que el botón de semiprivados funcione.</li>
+<li>Enviar mensajes de prueba al chatbot con términos comerciales reales de la florería y ajustar Data.botResponses si se detectan vacíos de conocimiento.</li>
+</ul>
+
+<h1>5. Pruebas de aceptación con el negocio (UAT)</h1>
+<p>La aceptación la realiza el dueño/administrador de la florería sobre los entregables críticos derivados de los requisitos de la empresa:</p>
+<table>
+<tr><th>#</th><th>Criterio de aceptación del negocio</th><th>Evidencia</th><th>Firma (delegado)</th></tr>
+<tr><td>UAT-01</td><td>El catálogo muestra los arreglos con precios en pesos correctos y permite comprar como cliente registrado.</td><td>Pedido de ejemplo confirmado y visible en historial.</td><td>______</td></tr>
+<tr><td>UAT-02</td><td>El chatbot atiende preguntas de catálogo, precios, entregas y ocasiones, y permite agregar al carrito.</td><td>Sesión grabada de chat de prueba.</td><td>______</td></tr>
+<tr><td>UAT-03</td><td>El reporte mensual entrega (a) cantidad de personas atendidas, (b) calificación de los clientes, (c) sugerencias y recomendaciones a la administración.</td><td>Reporte del mes con los tres bloques e impresión del mismo.</td><td>______</td></tr>
+<tr><td>UAT-04</td><td>El panel permite gestionar productos, pedidos e inventario sin contactar al desarrollador.</td><td>CRUD de producto y cambio de estado demostrados.</td><td>______</td></tr>
+<tr><td>UAT-05</td><td>Solo el administrador ve el CRM, y los datos sensibles de los clientes nunca aparecen.</td><td>Revisión de la red y de la tabla con el candado "Protegido".</td><td>______</td></tr>
+<tr><td>UAT-06</td><td>El aviso de privacidad explica el manejo de datos y el registro exige consentimiento.</td><td>Checkbox obligatorio verificado.</td><td>______</td></tr>
+</table>
+
+<h1>6. Capacitación</h1>
+<table>
+<tr><th>Rol</th><th>Contenido</th><th>Duración</th></tr>
+<tr><td>Administrador</td><td>Panel completo: dashboard e inventario, alta/edición de productos, gestión de estados de pedidos, interpretación del reporte mensual (3 bloques), CRM y protección de datos, cambio de idioma/moneda.</td><td>2 sesiones de 1 h</td></tr>
+<tr><td>Personal de atención</td><td>Uso del chatbot para atención, registro de clientes (consentimiento), interpretación de calificaciones y sugerencias, manejo del aviso de privacidad.</td><td>1 sesión de 1 h</td></tr>
+<tr><td>Administrador técnico</td><td>Respaldo/restauración de la BD, actualización de Data.botResponses, config.php y solución de incidencias básicas.</td><td>1 sesión de 1,5 h</td></tr>
+</table>
+<p>Material de apoyo: la documentación generada (Requerimientos, Análisis, Diseño, Desarrollo, Pruebas e Implementación) queda en la carpeta documentacion/ del proyecto para consulta permanente.</p>
+
+<h1>7. Plan de respaldo y recuperación</h1>
+
+<h2>7.1 Respaldo</h2>
+<ul>
+<li><strong>Base de datos:</strong> exportación semanal completa de flora_elegante (phpMyAdmin, formato SQL con DROP TABLE + CREATE + INSERT), copiada a un dispositivo externo o servicio seguro.</li>
+<li><strong>Archivos:</strong> copia del proyecto (htdocs\flora-elegante) mensual o tras cada cambio relevante.</li>
+<li><strong>Rotación:</strong> conservar al menos 4 respaldos semanales y 3 mensuales.</li>
+</ul>
+
+<h2>7.2 Recuperación y rollback</h2>
+<table>
+<tr><th>Escenario</th><th>Procedimiento</th></tr>
+<tr><td>Corrupción de la BD</td><td>Restaurar el respaldo más reciente; volver a verificar cuentas y stock.</td></tr>
+<tr><td>Actualización fallida del sitio</td><td>Revertir htdocs a la copia previa (rollback por carpeta); el esquema SQL es compatible hacia atrás.</td></tr>
+<tr><td>Pérdida de accesos demo</td><td>Eliminar filas demo y re-ejecutar el bootstrap (crea las cuentas con password_hash).</td></tr>
+<tr><td>Desastre completo del equipo</td><td>Instalar XAMPP, restaurar archivos y BD desde respaldo; repetir pasos 3.2 a 3.5.</td></tr>
+</table>
+
+<h1>8. Soporte y mantenimiento</h1>
+<table>
+<tr><th>Actividad</th><th>Frecuencia</th><th>Responsable</th></tr>
+<tr><td>Verificación diaria del cierre de ventas y reporte del día</td><td>Diaria</td><td>Administrador de la florería</td></tr>
+<tr><td>Respaldo de base de datos</td><td>Semanal</td><td>Administrador técnico</td></tr>
+<tr><td>Revisión de inventario y umbral de reposición</td><td>Semanal</td><td>Administrador</td></tr>
+<tr><td>Revisión de sugerencias acumuladas del chatbot</td><td>Mensual con el reporte</td><td>Administrador</td></tr>
+<tr><td>Actualización de la base de conocimientos del chatbot</td><td>Tras detectar vacíos o nuevas promociones</td><td>Administrador técnico</td></tr>
+<tr><td>Aplicación de correcciones de defectos menores (DF-01..DF-05)</td><td>En la primera iteración de mantenimiento</td><td>Desarrollador</td></tr>
+<tr><td>Rotación y copia externa de respaldos</td><td>Mensual</td><td>Administrador técnico</td></tr>
+</table>
+
+<h1>9. Cierre de la implementación y entregables</h1>
+<p>Al finalizar la implementación se entregan: el sistema desplegado y operativo en http://localhost/flora-elegante/, la base de datos migrada y verificada, las cuentas de operación documentadas, el plan de respaldo activo, los formatos UAT firmados y la documentación completa del proyecto en documentacion/. El proceso formal se cierra con la firma de la aceptación, quedando el sistema en estado de producción local con el soporte descrito en la sección 8.</p>
+
+<h1>10. Roadmap de próximas versiones</h1>
+<table>
+<tr><th>Prioridad</th><th>Mejora</th><th>Beneficio</th></tr>
+<tr><td>Alta</td><td>Pasarela de pagos en línea y facturación</td><td>Venta 24/7 y cumplimiento fiscal.</td></tr>
+<tr><td>Alta</td><td>Migración a PostgreSQL y punto único de configuración por variables de entorno</td><td>Preparación para plataformas en la nube y despliegues gestionados.</td></tr>
+<tr><td>Media</td><td>Rastreo de pedidos y notificaciones por correo/WhatsApp del estado</td><td>Transparencia al cliente (mejora en sugerencias tipo "rastreo").</td></tr>
+<tr><td>Media</td><td>Automatización de pruebas de regresión (unitarias para chatbot y reporte)</td><td>Calidad sostenible en cada evolución.</td></tr>
+<tr><td>Media</td><td>Uso de HTTPS (certificado local/Let's Encrypt) y endurecimiento de credenciales de BD</td><td>Cumplimiento de LFPDPPP y seguridad en tránsito.</td></tr>
+<tr><td>Baja</td><td>Reportes descargables (PDF) y suscripciones/recurrentes de flores</td><td>Información exportable y nuevas líneas de ingreso.</td></tr>
+<tr><td>Baja</td><td>Modo oscuro y accesibilidad avanzada (WCAG 2.1 AA)</td><td>Experiencia ampliada.</td></tr>
+</table>
+
+</body>
+</html>

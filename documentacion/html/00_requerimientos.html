@@ -1,0 +1,427 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<title>Ingeniería de Requerimientos - Flora Elegante</title>
+<style>
+body { font-family: Calibri, Arial, sans-serif; font-size: 11pt; color: #1a1a1a; }
+h1 { color: #14532D; font-size: 18pt; page-break-before: always; }
+h2 { color: #2E6B3F; font-size: 14pt; }
+h3 { color: #3D7A54; font-size: 12pt; }
+table, th, td { border: 1px solid #4a4a4a; border-collapse: collapse; }
+th { background-color: #E8F0E6; }
+td, th { padding: 4px 8px; font-size: 9.5pt; vertical-align: top; }
+p { text-align: justify; }
+</style>
+</head>
+<body>
+
+<h1 style="page-break-before: avoid;">1. Introducción</h1>
+
+<h2>1.1 Propósito de este documento</h2>
+<p>El presente documento constituye la <strong>Especificación de Requisitos de Software (ERS)</strong> del proyecto <strong>Flora Elegante</strong>, un sistema de información para una florería que permite comercializar arreglos florales en línea, recopilar información de sus clientes de forma clasificada (públicos, semiprivados, privados y sensibles), atender a sus clientes a través de un chatbot conversacional y entregar mensualmente a la administración un reporte con indicadores de atención. El propósito de esta especificación es establecer, de manera precisa, completa, inequívoca y verificable, qué debe hacer el sistema, sin entrar en detalles de cómo debe implementarse técnicamente (aspecto que corresponde a las etapas de análisis y diseño).</p>
+<p>Este documento se elaboró siguiendo las buenas prácticas y las estructuras recomendadas por los estándares internacionales de ingeniería de requerimientos, en particular la norma <strong>ISO/IEC/IEEE 29148:2018</strong> («Systems and software engineering — Life cycle processes — Requirements engineering», sucesora de la clásica IEEE Std 830-1998) y las características de calidad de un requerimiento que dicha norma establece: necesarios, inequívocos, completos, consistentes, verificables, trazables y factibles. Se complementa con referencias a la norma de documentación de pruebas IEEE 829-2008 / ISO/IEC/IEEE 29119 y a la LFPDPPP (Ley Federal de Protección de Datos Personales en Posesión de los Particulares) que aplica al tratamiento de datos personales en México, país de operación de la empresa.</p>
+<p>El destinatario de este documento es tanto el equipo de desarrollo como la administración de la empresa y los responsables de operación; por ello se ha redactado en un lenguaje claro que permite validar, desde la perspectiva de negocio, que los requerimientos recogidos son los correctos, a la vez que da al equipo técnico la precisión necesaria para dimensionar, diseñar, programar y probar la solución.</p>
+
+<h2>1.2 Alcance</h2>
+<p>El sistema objeto de este documento cubre los siguientes dominios funcionales:</p>
+<ul>
+<li><strong>Comercio electrónico:</strong> catálogo de arreglos florales, carrito de compras, generación de pedidos con validación de inventario, historial de pedidos del cliente y gestión de pedidos por parte del administrador.</li>
+<li><strong>Gestión de clientes y clasificación de datos:</strong> registro y gestión del perfil del cliente con etiquetado explícito de cada dato según su clasificación (PÚBLICO, SEMIPRIVADO, PRIVADO, SENSIBLE), aviso de privacidad obligatorio y manejo diferenciado de los datos en el panel administrativo (enmascarado de datos privados y sensibles).</li>
+<li><strong>Atención al cliente mediante chatbot:</strong> asistente virtual bilingüe (español e inglés) que responde información del catálogo, precios, entregas, pagos, recomendaciones por ocasión, consulta del carrito y adición de productos al carrito.</li>
+<li><strong>Reporte mensual:</strong> el sistema debe generar, a partir de las interacciones del chatbot, un reporte mensual que informe (a) la cantidad de personas atendidas, (b) la calificación dada por los clientes a la atención (promedio y distribución de estrellas) y (c) sugerencias de los clientes convertidas en recomendaciones accionables para la administración.</li>
+<li><strong>Panel administrativo:</strong> tablero con estadísticas de negocio, gestión de productos (CRUD), gestión de inventario con alertas, gestión de pedidos, reporte mensual y CRM de clientes.</li>
+</ul>
+<p>Quedan fuera del alcance de la versión inicial (y se documentan como trabajo futuro en el documento de Implementación) el pasarela de pagos en línea real, el rastreo GPS de envíos en tiempo real, los programas de puntos/fidelización, las suscripciones recurrentes y la versión PostgreSQL del backend; estos elementos se contemplan como mejoras para versiones posteriores.</p>
+
+<h2>1.3 Definiciones, acrónimos y abreviaturas</h2>
+<table>
+<tr><th>Término</th><th>Definición</th></tr>
+<tr><td>API</td><td>Application Programming Interface. Interfaz de programación de aplicaciones; en este proyecto, conjunto de endpoints PHP que exponen las operaciones del sistema.</td></tr>
+<tr><td>CRUD</td><td>Create, Read, Update, Delete. Operaciones de alta, consulta, modificación y baja de registros.</td></tr>
+<tr><td>Dato público</td><td>Información de libre acceso y no considerada sensible ni semiprivada según la LFPDPPP.</td></tr>
+<tr><td>Dato semiprivado</td><td>Información cuya divulgación requiere autorización del titular; en el sistema: teléfono y dirección.</td></tr>
+<tr><td>Dato privado</td><td>Información íntima que requiere consentimiento del titular; en el sistema: fecha de nacimiento y preferencias florales.</td></tr>
+<tr><td>Dato sensible</td><td>Información que afecta la esfera más íntima del titular (p. ej. datos patrimoniales, identificación oficial); en el sistema: identificación oficial y método de pago.</td></tr>
+<tr><td>ERS / SRS</td><td>Especificación de Requisitos del Software / Software Requirements Specification.</td></tr>
+<tr><td>LFPDPPP</td><td>Ley Federal de Protección de Datos Personales en Posesión de los Particulares (México).</td></tr>
+<tr><td>Chatbot</td><td>Agente conversacional automatizado; en este proyecto recibe el nombre de «Flora».</td></tr>
+<tr><td>PDO</td><td>PHP Data Objects. Capa de abstracción de acceso a base de datos en PHP utilizada por el backend.</td></tr>
+<tr><td>CRM</td><td>Customer Relationship Management. Gestión de las relaciones con los clientes; pantalla del panel administrativo que lista a los clientes con su perfil.</td></tr>
+<tr><td>RF / RNF</td><td>Requerimiento Funcional / Requerimiento No Funcional.</td></tr>
+<tr><td>MoSCoW</td><td>Técnica de priorización: Must (obligatorio), Should (debería), Could (podría), Won't (no por ahora).</td></tr>
+<tr><td>Rol</td><td>Perfil de acceso del usuario: «cliente» o «administrador».</td></tr>
+</table>
+
+<h2>1.4 Referencias</h2>
+<ol>
+<li>ISO/IEC/IEEE 29148:2018 — Systems and software engineering. Life cycle processes. Requirements engineering.</li>
+<li>IEEE Std 830-1998 — Recommended Practice for Software Requirements Specifications (referencia histórica de estructura).</li>
+<li>IEEE Std 829-2008 / ISO/IEC/IEEE 29119 — Documentación y procesos de pruebas de software.</li>
+<li>ISO/IEC 25010 — Modelo de calidad de sistemas y software (SQuaRE).</li>
+<li>Ley Federal de Protección de Datos Personales en Posesión de los Particulares (LFPDPPP), México.</li>
+<li>ISO/IEC 12207 — Procesos del ciclo de vida del software.</li>
+<li>README.md y artefactos del repositorio del proyecto (código fuente, esquema SQL, diagramas PlantUML).</li>
+</ol>
+
+<h2>1.5 Descripción general del documento</h2>
+<p>El documento está organizado de la siguiente manera: la sección 2 presenta la descripción general del sistema y su contexto; la sección 3 describe los actores y partes interesadas; la sección 4 establece la clasificación de los datos personales; la sección 5 contiene la especificación detallada de los requerimientos funcionales; la sección 6 los requerimientos no funcionales; la sección 7 las restricciones, supuestos y dependencias; la sección 8 la matriz de trazabilidad; la sección 9 la priorización MoSCoW; la sección 10 los criterios de aceptación; la sección 11 el plan de validación de requerimientos; y la sección 12 el registro de aprobaciones.</p>
+
+<h1>2. Descripción general</h1>
+
+<h2>2.1 Contexto y necesidad del negocio</h2>
+<p>Flora Elegante es una florería ubicada en Av. Reforma 512, Col. Juárez, Ciudad de México, que comercializa arreglos florales clasificados en seis categorías (rosas, lirios, girasoles, tulipanes, orquídeas y exóticas). La empresa opera tradicionalmente por teléfono y punto de venta, y requiere modernizar la relación con sus clientes mediante un canal digital que permita: a) dar a conocer su catálogo las 24 horas; b) capturar pedidos en línea con control de inventario; c) recopilar datos de los clientes de manera estructurada y con una clasificación que permita cumplir la normativa de protección de datos; d) atender consultas frecuentes mediante un chatbot que libere carga del personal humano; y e) medir mensualmente la calidad del servicio con indicadores objetivos.</p>
+<p>El punto de partida del proyecto fue la solicitud explícita de la administración de que el sistema debía: (1) recopilar información de los clientes incluyendo datos públicos, semiprivados y sensibles, con la gestión correspondiente de consentimiento y protección; (2) incluir un chatbot para la atención a clientes; y (3) presentar mensualmente un reporte que informe la cantidad de personas atendidas, la calificación otorgada por los clientes a la atención y las sugerencias/recomendaciones de los clientes dirigidas a la administración de la empresa.</p>
+
+<h2>2.2 Modelo y perfil del sistema</h2>
+<p>El sistema es una aplicación web de tres capas desplegada en el entorno XAMPP: una capa de presentación construida con HTML5, CSS (Tailwind CSS y estilos propios) y JavaScript modular; una capa de negocio/API implementada en PHP 8 con un patrón de front controller que delega a controladores por recurso; y una capa de datos basada en MySQL/MariaDB con un esquema de ocho tablas. La arquitectura se detalla en el documento de Diseño; en esta sección basta indicar los bloques funcionales que el sistema debe cumplir.</p>
+
+<h2>2.3 Funciones principales del sistema</h2>
+<table>
+<tr><th>Bloque funcional</th><th>Descripción de alto nivel</th></tr>
+<tr><td>Sitio público (index.html)</td><td>Portada con información de la empresa, catálogo de arreglos, carrito de compras, registro y perfil de cliente, aviso de privacidad, sección «Nosotros», modo bilingüe, cambio de moneda y widget de chatbot.</td></tr>
+<tr><td>Autenticación (login.html)</td><td>Inicio de sesión de clientes y administradores con sesión respaldada por PHP.</td></tr>
+<tr><td>Área de cliente (cliente.html)</td><td>Historial de pedidos del cliente autenticado y acceso a su perfil.</td></tr>
+<tr><td>Panel administrativo (admin.html)</td><td>Dashboard con estadísticas, gestión de productos, gestión de pedidos, reporte mensual y CRM de clientes.</td></tr>
+<tr><td>Backend PHP (api/)</td><td>Endpoints para autenticación, productos, categorías, pedidos, dashboard, clientes e interacciones; consultas parametrizadas con PDO; hashing de contraseñas.</td></tr>
+<tr><td>Base de datos MySQL</td><td>Tablas: rol, usuario, cliente_perfil, categoria, producto, pedido, pedido_detalle e interaccion.</td></tr>
+</table>
+
+<h2>2.4 Restricciones de alto nivel y entorno de ejecución</h2>
+<ul>
+<li>La plataforma de despliegue prevista es XAMPP (Apache + PHP 8 + MySQL/MariaDB) en un servidor local o un hosting compatible con PHP y MySQL.</li>
+<li>El sitio debe funcionar con doble clic bajo http://localhost, por lo que la API debe residir en el mismo origen para evitar problemas de CORS.</li>
+<li>Los precios del catálogo se expresan en pesos colombianos (COP) con opción de exhibición en dólares (USD) mediante factor de conversión configurable.</li>
+<li>Los contenidos deben presentarse en español e inglés, seleccionables en la interfaz, manteniendo la coherencia de los textos en ambos idiomas.</li>
+<li>El entorno de desarrollo/producción no dispone, en esta versión, de certificado SSL ni pasarela de pagos real; estas limitaciones se abordan como trabajo futuro.</li>
+</ul>
+
+<h2>2.5 Supuestos y dependencias</h2>
+<ul>
+<li>Se asume que el personal administrativo cuenta con navegador web moderno y conocimientos básicos de operación de sistemas web.</li>
+<li>Se asume que la empresa dispone de cuentas de demostración para la validación del sistema (administrador y cliente).</li>
+<li>El sistema depende de que Apache y MySQL estén activos; el backend crea automáticamente, la primera vez, los usuarios y pedidos de demostración (bootstrap).</li>
+<li>Se asume que los clientes otorgan su consentimiento expreso mediante el aviso de privacidad para el tratamiento de sus datos personales.</li>
+</ul>
+
+<h1>3. Actores y partes interesadas</h1>
+
+<h2>3.1 Partes interesadas (stakeholders)</h2>
+<table>
+<tr><th>Parte interesada</th><th>Interés / expectativa</th><th>Relación con el sistema</th></tr>
+<tr><td>Administración de la empresa</td><td>Medir calidad del servicio, decisiones informadas por datos, cumplimiento normativo, incremento de ventas.</td><td>Recibe el reporte mensual y las recomendaciones; aprueba cambios y prioridades.</td></tr>
+<tr><td>Administrador del sistema</td><td>Gestionar catálogo, inventario, pedidos y clientes; generar reportes.</td><td>Rol «administrador» en el panel administrativo.</td></tr>
+<tr><td>Clientes</td><td>Comprar fácilmente, consultar información, recibir atención y ser escuchados en sus sugerencias.</td><td>Rol «cliente»; utilizan el sitio y el chatbot.</td></tr>
+<tr><td>Equipo de desarrollo</td><td>Entender qué construir para diseñar, programar y probar correctamente.</td><td>Consume este documento y los documentos de análisis, diseño, desarrollo, pruebas e implementación.</td></tr>
+<tr><td>Equipo de atención al cliente</td><td>Menos consultas repetitivas, información de calidad al cliente.</td><td>El chatbot absorbe consultas frecuentes; las sugerencias orientan la mejora del servicio.</td></tr>
+<tr><td>Responsable de protección de datos (delegado)</td><td>Cumplimiento de la LFPDPPP, gestión de consentimientos y derechos ARCO.</td><td>Valida la clasificación de datos y los mecanismos de enmascarado.</td></tr>
+</table>
+
+<h2>3.2 Actores del sistema</h2>
+<table>
+<tr><th>Actor</th><th>Tipo</th><th>Descripción y privilegios</th></tr>
+<tr><td>Visitante (no autenticado)</td><td>Primario</td><td>Navega el catálogo, agrega productos al carrito, usa el chatbot, se registra o inicia sesión. Sin datos privados del negocio.</td></tr>
+<tr><td>Cliente</td><td>Primario</td><td>Usuario autenticado con rol «cliente»: crea pedidos, consulta su historial, gestiona su perfil y datos, califica el servicio y aporta sugerencias.</td></tr>
+<tr><td>Administrador</td><td>Primario</td><td>Usuario autenticado con rol «administrador»: acceso total al panel, CRUD de productos, gestión de inventario y pedidos, reporte mensual y CRM con datos enmascarados.</td></tr>
+<tr><td>Sistema (reloj/BD)</td><td>Secundario</td><td>Genera fechas, calcula métricas del reporte, aplica reglas de negocio e integridad.</td></tr>
+</table>
+
+<h1>4. Clasificación de los datos personales</h1>
+
+<h2>4.1 Marco normativo</h2>
+<p>El tratamiento de datos personales por parte de la empresa (responsable) se sujeta a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares y su Reglamento. La LFPDPPP distingue entre datos personales y datos personales sensibles; adicionalmente, la práctica profesional y los criterios de autorregulación manejados por la empresa distinguen cuatro niveles de clasificación: públicos, semiprivados, privados y sensibles. Esta clasificación es la que la empresa solicitó de forma explícita y la que el sistema implementa, tanto etiquetando los campos en los formularios como gestionando su revelación en el CRM.</p>
+
+<h2>4.2 Matriz de clasificación de datos</h2>
+<table>
+<tr><th>Clasificación</th><th>Campos del sistema</th><th>Tratamiento requerido</th><th>Visibilidad en el CRM del administrador</th></tr>
+<tr><td>PÚBLICO</td><td>Nombre completo, correo electrónico, fecha de registro, rol</td><td>Consentimiento para su tratamiento; pueden mostrarse en listados.</td><td>Siempre visibles.</td></tr>
+<tr><td>SEMIPRIVADO</td><td>Teléfono, dirección</td><td>Requieren autorización del titular para su divulgación; se usan para entregas y contacto.</td><td>Ocultos por defecto; el administrador puede revelarlos con un botón de alternancia.</td></tr>
+<tr><td>PRIVADO</td><td>Fecha de nacimiento, preferencias florales</td><td>Consentimiento explícito; uso limitado a servicios personalizados.</td><td>Fecha de nacimiento: se muestra únicamente como edad derivada. Preferencias: protegidas de forma permanente.</td></tr>
+<tr><td>SENSIBLE</td><td>Identificación oficial, método de pago, hash de contraseña</td><td>Consentimiento expreso por escrito; acceso restringido; cifrado/hashing.</td><td>Nunca visibles (excluidos de las respuestas del API y enmascarados en la interfaz).</td></tr>
+</table>
+
+<h2>4.3 Requerimientos derivados de la clasificación</h2>
+<p>De esta matriz se derivan requerimientos específicos de privacidad y seguridad que se formalizan en las secciones 5 y 6, en particular: etiquetado visible de cada campo en el formulario de registro (RF-PRI-01), aviso de privacidad con aceptación obligatoria (RF-PRI-02), exclusión de datos sensibles de las respuestas del API de clientes (RF-PRI-03), enmascarado de datos semiprivados y privados en el CRM (RF-PRI-04), cálculo de edad en el cliente sin exponer la fecha de nacimiento cruda (RF-PRI-05) y almacenamiento de contraseñas con hash (RF-SEG-03).</p>
+
+<h1>5. Requerimientos funcionales</h1>
+
+<h2>5.1 Formato de los requerimientos</h2>
+<p>Cada requerimiento funcional (RF) se identifica con un código único de la forma <strong>RF-&lt;MÓDULO&gt;-&lt;NÚMERO&gt;</strong>, se redacta como una declaración «El sistema debe…» conforme a la práctica recomendada por ISO/IEC/IEEE 29148, e incluye su prioridad MoSCoW y su vínculo con el caso de uso y la prueba que lo verifican (matriz de trazabilidad, sección 8).</p>
+
+<h2>5.2 Módulo de autenticación y cuentas (RF-AUT)</h2>
+<table>
+<tr><th>ID</th><th>Requerimiento</th><th>Prioridad</th></tr>
+<tr><td>RF-AUT-01</td><td>El sistema debe permitir el registro de nuevos clientes mediante un formulario web con nombre completo, correo electrónico, contraseña y confirmación.</td><td>Must</td></tr>
+<tr><td>RF-AUT-02</td><td>El sistema debe validar el formato del correo electrónico y rechazar valores no válidos.</td><td>Must</td></tr>
+<tr><td>RF-AUT-03</td><td>El sistema debe validar la política de contraseñas: mínimo 8 caracteres, al menos una mayúscula, una minúscula y un número.</td><td>Must</td></tr>
+<tr><td>RF-AUT-04</td><td>El sistema debe impedir la creación de cuentas duplicadas con el mismo correo electrónico y notificar al usuario.</td><td>Must</td></tr>
+<tr><td>RF-AUT-05</td><td>El sistema debe permitir el inicio de sesión de clientes y administradores con correo y contraseña, y crear una sesión persistente respaldada por PHP (cookie fe_session).</td><td>Must</td></tr>
+<tr><td>RF-AUT-06</td><td>El sistema debe distinguir los roles «cliente» y «administrador» y restringir el acceso a las funcionalidades de administración únicamente al rol administrador.</td><td>Must</td></tr>
+<tr><td>RF-AUT-07</td><td>El sistema debe permitir el cierre de sesión, destruyendo la sesión y expirando la cookie.</td><td>Must</td></tr>
+<tr><td>RF-AUT-08</td><td>El sistema debe permitir al cliente autenticado consultar su propio perfil y actualizarlo.</td><td>Must</td></tr>
+<tr><td>RF-AUT-09</td><td>El sistema debe permitir al cliente cambiar su contraseña validando la misma política de contraseñas.</td><td>Must</td></tr>
+<tr><td>RF-AUT-10</td><td>El sistema debe impedir que el correo electrónico del cliente sea modificado desde el modo perfil (es su identificador de cuenta).</td><td>Should</td></tr>
+<tr><td>RF-AUT-11</td><td>El sistema debe registrar la fecha de registro y actualizar el último acceso de cada usuario.</td><td>Should</td></tr>
+</table>
+
+<h2>5.3 Módulo de datos del cliente y perfil (RF-PER)</h2>
+<table>
+<tr><th>ID</th><th>Requerimiento</th><th>Prioridad</th></tr>
+<tr><td>RF-PER-01</td><td>El sistema debe recopilar del cliente los datos públicos: nombre y correo electrónico.</td><td>Must</td></tr>
+<tr><td>RF-PER-02</td><td>El sistema debe recopilar los datos semiprivados: teléfono y dirección de entrega, con validación de rango de dígitos (7 a 15) y longitud mínima de dirección.</td><td>Must</td></tr>
+<tr><td>RF-PER-03</td><td>El sistema debe recopilar los datos privados: fecha de nacimiento (no posterior a la actual) y preferencias florales.</td><td>Must</td></tr>
+<tr><td>RF-PER-04</td><td>El sistema debe recopilar los datos sensibles: identificación oficial y método de pago.</td><td>Must</td></tr>
+<tr><td>RF-PER-05</td><td>El formulario de registro/perfil debe etiquetar cada campo con su clasificación de datos (PÚBLICO / SEMIPRIVADO / PRIVADO / SENSIBLE).</td><td>Must</td></tr>
+<tr><td>RF-PER-06</td><td>El sistema debe presentar el aviso de privacidad y exigir su aceptación para completar el registro.</td><td>Must</td></tr>
+<tr><td>RF-PER-07</td><td>El cliente debe poder consultar y editar sus datos en un modo perfil que precarga la información y solo actualiza su propio registro.</td><td>Must</td></tr>
+<tr><td>RF-PER-08</td><td>El sistema debe validar en el formulario que el nombre sea completo (nombre y apellido, mínimo 3 caracteres y contenga un espacio).</td><td>Should</td></tr>
+<tr><td>RF-PER-09</td><td>El sistema debe mostrar errores en línea por campo y resaltar los campos inválidos, además de errores globales cuando aplique.</td><td>Should</td></tr>
+</table>
+
+<h2>5.4 Módulo de catálogo y productos (RF-CAT)</h2>
+<table>
+<tr><th>ID</th><th>Requerimiento</th><th>Prioridad</th></tr>
+<tr><td>RF-CAT-01</td><td>El sistema debe presentar el catálogo de arreglos florales con nombre, descripción, precio, imagen, categoría y stock, en los dos idiomas.</td><td>Must</td></tr>
+<tr><td>RF-CAT-02</td><td>El catálogo público debe mostrar únicamente productos con estado «activo».</td><td>Must</td></tr>
+<tr><td>RF-CAT-03</td><td>El administrador debe poder crear, editar, eliminar y listar productos (CRUD), incluidos los inactivos.</td><td>Must</td></tr>
+<tr><td>RF-CAT-04</td><td>El sistema debe sincronizar el catálogo mostrado en el sitio con la base de datos a través del API, de modo que el catálogo semilla del frontend se actualice con la información real.</td><td>Must</td></tr>
+<tr><td>RF-CAT-05</td><td>El sistema debe validar que el nombre del producto sea obligatorio al crearlo o actualizarlo.</td><td>Must</td></tr>
+<tr><td>RF-CAT-06</td><td>El administrador debe poder clasificar productos en categorías (rosas, lirios, girasoles, tulipanes, orquídeas, exóticas).</td><td>Should</td></tr>
+</table>
+
+<h2>5.5 Módulo de carrito y pedidos (RF-CAR)</h2>
+<table>
+<tr><th>ID</th><th>Requerimiento</th><th>Prioridad</th></tr>
+<tr><td>RF-CAR-01</td><td>El sistema debe permitir agregar productos al carrito desde el catálogo y desde el chatbot.</td><td>Must</td></tr>
+<tr><td>RF-CAR-02</td><td>El carrito debe persistir en el almacenamiento local del navegador (localStorage) entre recargas de página.</td><td>Must</td></tr>
+<tr><td>RF-CAR-03</td><td>El sistema debe permitir modificar cantidades, eliminar productos, vaciar el carrito y calcular el total.</td><td>Must</td></tr>
+<tr><td>RF-CAR-04</td><td>El sistema debe validar el stock disponible antes de confirmar un pedido y rechazar solicitudes con stock insuficiente.</td><td>Must</td></tr>
+<tr><td>RF-CAR-05</td><td>Al confirmar el pedido, el sistema debe descontar el inventario de los productos incluidos, de forma atómica y transaccional.</td><td>Must</td></tr>
+<tr><td>RF-CAR-06</td><td>El sistema debe crear el pedido con estado inicial «Confirmado» y el total calculado.</td><td>Must</td></tr>
+<tr><td>RF-CAR-07</td><td>El cliente debe poder consultar su historial de pedidos con los detalles (productos, cantidades, total, estado).</td><td>Must</td></tr>
+<tr><td>RF-CAR-08</td><td>El sistema debe impedir la creación de pedidos con cantidades no positivas o productos inexistentes.</td><td>Must</td></tr>
+</table>
+
+<h2>5.6 Módulo de gestión de pedidos (admin) (RF-PED)</h2>
+<table>
+<tr><th>ID</th><th>Requerimiento</th><th>Prioridad</th></tr>
+<tr><td>RF-PED-01</td><td>El administrador debe poder listar todos los pedidos con el detalle de sus productos y el cliente asociado.</td><td>Must</td></tr>
+<tr><td>RF-PED-02</td><td>El administrador debe poder cambiar el estado de un pedido entre los valores permitidos: Confirmado, En camino, Entregado y Cancelado.</td><td>Must</td></tr>
+<tr><td>RF-PED-03</td><td>El sistema debe rechazar cambios de estado con valores no permitidos.</td><td>Must</td></tr>
+</table>
+
+<h2>5.7 Módulo de inventario (RF-INV)</h2>
+<table>
+<tr><th>ID</th><th>Requerimiento</th><th>Prioridad</th></tr>
+<tr><td>RF-INV-01</td><td>El sistema debe mantener el stock (inventario) de cada producto y descontarlo automáticamente al confirmar pedidos.</td><td>Must</td></tr>
+<tr><td>RF-INV-02</td><td>El sistema debe impedir cantidades de stock negativas, garantizando la integridad del dato.</td><td>Must</td></tr>
+<tr><td>RF-INV-03</td><td>El administrador debe poder actualizar el stock de un producto manualmente.</td><td>Should</td></tr>
+<tr><td>RF-INV-04</td><td>El panel administrativo debe alertar sobre productos con inventario bajo (stock menor o igual a un umbral de 5 unidades).</td><td>Must</td></tr>
+</table>
+
+<h2>5.8 Módulo de panel administrativo (RF-ADM)</h2>
+<table>
+<tr><th>ID</th><th>Requerimiento</th><th>Prioridad</th></tr>
+<tr><td>RF-ADM-01</td><td>El panel administrativo debe mostrar estadísticas: número de usuarios (clientes), productos totales, productos activos, pedidos totales, productos con inventario bajo, conteo de pedidos por estado y los últimos cinco pedidos.</td><td>Must</td></tr>
+<tr><td>RF-ADM-02</td><td>El acceso al panel administrativo debe restringirse a usuarios con rol administrador; de lo contrario la API debe responder 403.</td><td>Must</td></tr>
+<tr><td>RF-ADM-03</td><td>El panel debe ofrecer las secciones: estadísticas, productos, pedidos, reporte mensual y CRM de clientes.</td><td>Must</td></tr>
+</table>
+
+<h2>5.9 Módulo de chatbot (RF-CHAT)</h2>
+<p>El chatbot, llamado <strong>«Flora»</strong>, es el componente central de atención al cliente y la fuente de datos del reporte mensual. Sus requerimientos son:</p>
+<table>
+<tr><th>ID</th><th>Requerimiento</th><th>Prioridad</th></tr>
+<tr><td>RF-CHAT-01</td><td>El sistema debe desplegar un widget de chat accesible desde el sitio público y el área de cliente.</td><td>Must</td></tr>
+<tr><td>RF-CHAT-02</td><td>El chatbot debe reconocer consultas en español e inglés, tolerando texto sin tildes mediante normalización.</td><td>Must</td></tr>
+<tr><td>RF-CHAT-03</td><td>El chatbot debe responder información sobre: precios, tiempos y zonas de entrega, métodos de pago, horarios, garantía de frescura, ubicación y contacto, cuidados de las flores, promociones y eventos.</td><td>Must</td></tr>
+<tr><td>RF-CHAT-04</td><td>El chatbot debe identificar productos por nombre (español o inglés) y mostrar su ficha con botón de agregar al carrito.</td><td>Must</td></tr>
+<tr><td>RF-CHAT-05</td><td>El chatbot debe recomendar arreglos según la ocasión detectada: cumpleaños, aniversario/romántico, pésame/condolencias, nacimiento bebé, día de la madre, graduación y disculpas.</td><td>Must</td></tr>
+<tr><td>RF-CHAT-06</td><td>El chatbot debe mostrar el catálogo en un carrusel paginado con la opción «Ver más arreglos».</td><td>Must</td></tr>
+<tr><td>RF-CHAT-07</td><td>El chatbot debe permitir consultar el carrito, mostrar el número de artículos y el total, y abrir el carrito.</td><td>Must</td></tr>
+<tr><td>RF-CHAT-08</td><td>El chatbot debe permitir agregar productos al carrito directamente desde la conversación.</td><td>Must</td></tr>
+<tr><td>RF-CHAT-09</td><td>El chatbot debe detectar la intención de finalizar la conversación y solicitar la calificación del servicio mediante estrellas (1 a 5).</td><td>Must</td></tr>
+<tr><td>RF-CHAT-10</td><td>El chatbot debe solicitar una sugerencia opcional en texto libre después de la calificación.</td><td>Must</td></tr>
+<tr><td>RF-CHAT-11</td><td>El sistema debe guardar cada calificación y sugerencia en la base de datos (tabla interaccion), vinculándola al usuario cuando exista sesión.</td><td>Must</td></tr>
+<tr><td>RF-CHAT-12</td><td>El chatbot debe responder con mensajes neutrales genéricos cuando no comprenda la consulta, ofreciendo opciones navegables.</td><td>Should</td></tr>
+<tr><td>RF-CHAT-13</td><td>El chatbot debe mostrar indicador de «escribiendo» y respuestas de texto enriquecido con botones de acción.</td><td>Should</td></tr>
+</table>
+
+<h2>5.10 Módulo de reporte mensual (RF-REP)</h2>
+<p>El reporte mensual es un entregable de negocio exigido por la administración. Debe contener exactamente los tres bloques solicitados:</p>
+<table>
+<tr><th>ID</th><th>Requerimiento</th><th>Prioridad</th></tr>
+<tr><td>RF-REP-01</td><td>El sistema debe generar un reporte correspondiente a un mes seleccionable dentro de los últimos 12 meses.</td><td>Must</td></tr>
+<tr><td>RF-REP-02</td><td><strong>a) Personas atendidas:</strong> el reporte debe informar la cantidad de interacciones del chatbot registradas en el mes seleccionado.</td><td>Must</td></tr>
+<tr><td>RF-REP-03</td><td><strong>b) Calificación de los clientes:</strong> el reporte debe informar la calificación promedio (1-5), la distribución de estrellas (cantidad y porcentaje por cada valor de 1 a 5) y el porcentaje de satisfacción (calificaciones de 4 y 5 estrellas).</td><td>Must</td></tr>
+<tr><td>RF-REP-04</td><td><strong>c) Sugerencias y recomendaciones:</strong> el reporte debe listar las sugerencias textuales de los clientes y derivar recomendaciones automáticas dirigidas a la administración.</td><td>Must</td></tr>
+<tr><td>RF-REP-05</td><td>El motor de recomendaciones debe evaluar la calificación promedio (sobresaliente ≥ 4,5; buena ≥ 3,5; crítica &lt; 3,5) y el porcentaje de satisfacción (alerta si &lt; 80%).</td><td>Must</td></tr>
+<tr><td>RF-REP-06</td><td>El motor de recomendaciones debe analizar por palabras clave las sugerencias para generar acciones concretas: logística de entregas, estructura de precios, ampliación de catálogo, experiencia digital (rastreo/fotos), suscripciones, métodos de pago, cumplimiento de pedidos, ocasiones/recordatorios, fidelización y fomento de retroalimentación.</td><td>Must</td></tr>
+<tr><td>RF-REP-07</td><td>El reporte debe mostrar un estado claro cuando el mes seleccionado no tenga interacciones (en lugar de métricas en cero confusas).</td><td>Must</td></tr>
+<tr><td>RF-REP-08</td><td>El reporte regenera los datos automáticamente al cambiar el mes si ya está visible.</td><td>Should</td></tr>
+</table>
+
+<h2>5.11 Módulo CRM y protección de datos (RF-CRM)</h2>
+<table>
+<tr><th>ID</th><th>Requerimiento</th><th>Prioridad</th></tr>
+<tr><td>RF-CRM-01</td><td>El panel administrativo debe listar los clientes con su perfil para la gestión de relaciones (CRM).</td><td>Must</td></tr>
+<tr><td>RF-CRM-02</td><td>Los datos sensibles (identificación oficial y método de pago) no deben ser devueltos por la API ni mostrados en el CRM; la interfaz debe indicar «Protegido».</td><td>Must</td></tr>
+<tr><td>RF-CRM-03</td><td>La fecha de nacimiento (dato privado) no debe mostrarse cruda; el sistema debe exponer únicamente la edad derivada calculada en el cliente.</td><td>Must</td></tr>
+<tr><td>RF-CRM-04</td><td>Las preferencias florales (dato privado) deben mostrarse como «Protegido» de forma permanente.</td><td>Must</td></tr>
+<tr><td>RF-CRM-05</td><td>Los datos semiprivados (teléfono y dirección) deben permanecer ocultos por defecto y poder revelarse mediante un control explícito del administrador.</td><td>Must</td></tr>
+</table>
+
+<h2>5.12 Módulo de internacionalización y moneda (RF-MUL)</h2>
+<table>
+<tr><th>ID</th><th>Requerimiento</th><th>Prioridad</th></tr>
+<tr><td>RF-MUL-01</td><td>El sistema debe ofrecer la interfaz en español e inglés y permutar el idioma sin recargar la página.</td><td>Must</td></tr>
+<tr><td>RF-MUL-02</td><td>El sistema debe formatar los precios en COP (es-CO) y permitir su conversión a USD mediante un tipo de cambio configurable (valor por defecto 1 USD = 4.000 COP).</td><td>Must</td></tr>
+<tr><td>RF-MUL-03</td><td>Las preferencias de idioma y moneda deben persistirse en el almacenamiento local.</td><td>Should</td></tr>
+</table>
+
+<h2>5.13 Módulo de seguridad y privacidad (RF-SEG)</h2>
+<table>
+<tr><th>ID</th><th>Requerimiento</th><th>Prioridad</th></tr>
+<tr><td>RF-SEG-01</td><td>El sistema debe autenticar a los usuarios contra la base de datos y verificar la contraseña con verificación segura de hash (password_verify).</td><td>Must</td></tr>
+<tr><td>RF-SEG-02</td><td>El sistema debe almacenar las contraseñas mediante password_hash (PASSWORD_DEFAULT) y nunca en texto plano.</td><td>Must</td></tr>
+<tr><td>RF-SEG-03</td><td>El sistema debe ejecutar todas las consultas a la base de datos con sentencias preparadas/parametrizadas (PDO) para evitar inyección SQL.</td><td>Must</td></tr>
+<tr><td>RF-SEG-04</td><td>El sistema debe controlar el acceso por rol en el backend y en el frontend (protección de vistas administrativas en el cliente).</td><td>Must</td></tr>
+<tr><td>RF-SEG-05</td><td>El sistema debe responder en formato JSON con códigos de estado HTTP apropiados (400, 401, 403, 404, 409, 200) y ocultar errores de ejecución al usuario final (display_errors off).</td><td>Must</td></tr>
+<tr><td>RF-SEG-06</td><td>El sistema debe declarar los encabezados CORS necesarios y responder correctamente a las preflight (OPTIONS).</td><td>Should</td></tr>
+<tr><td>RF-SEG-07</td><td>El sistema debe usarse la cookie de sesión con la bandera HttpOnly para reducir el riesgo de robo por XSS.</td><td>Should</td></tr>
+</table>
+
+<h1>6. Requerimientos no funcionales</h1>
+
+<h2>6.1 Glosario de atributos de calidad</h2>
+<p>Los requerimientos no funcionales se organizan de acuerdo con las categorías del modelo de calidad ISO/IEC 25010 (SQuaRE): eficiencia en el desempeño, seguridad, usabilidad, fiabilidad, mantenibilidad, compatibilidad y portabilidad; se añaden las categorías de privacidad (cumplimiento normativo) y documentación exigidas por la empresa. Cada RNF incluye una métrica o condición verificable, tal como recomiendan IEEE 29148 e ISO 25010.</p>
+
+<table>
+<tr><th>ID</th><th>Categoría</th><th>Requerimiento</th><th>Métrica / condición de verificación</th></tr>
+<tr><td>RNF-EFI-01</td><td>Eficiencia</td><td>El sistema debe responder las peticiones del API en un tiempo aceptable en el entorno local de XAMPP.</td><td>Respuesta de api/index.php menor a 1.500 ms en operaciones típicas de listado y menor a 500 ms en consultas simples, medidas en puesta en marcha.</td></tr>
+<tr><td>RNF-EFI-02</td><td>Eficiencia</td><td>El sitio debe cargar de forma fluida en conexiones de banda ancha y móvil.</td><td>Carga inicial de la página bajo 5 segundos en 4G; carga de imágenes con lazy loading y compresión.</td></tr>
+<tr><td>RNF-SEG-01</td><td>Seguridad</td><td>El sistema debe resistir inyección SQL.</td><td>0 vulnerabilidades de inyección SQL detectadas en pruebas con payloads maliciosos.</td></tr>
+<tr><td>RNF-SEG-02</td><td>Seguridad</td><td>El sistema debe resistir accesos no autorizados entre roles.</td><td>Todo intento de acceso a recurso de administración sin rol administrador responde 401/403.</td></tr>
+<tr><td>RNF-SEG-03</td><td>Seguridad</td><td>El sistema debe proteger las contraseñas en reposo.</td><td>La tabla usuario almacena únicamente hash; verificación exitosa con password_verify.</td></tr>
+<tr><td>RNF-PRI-01</td><td>Privacidad</td><td>El sistema debe cumplir la LFPDPPP en el tratamiento de datos personales.</td><td>Existencia de aviso de privacidad, consentimiento obligatorio y enmascarado de sensibles (verificado en pruebas).</td></tr>
+<tr><td>RNF-PRI-02</td><td>Privacidad</td><td>Ningún dato sensible debe ser expuesto en pantallas, respuestas de API o archivos de configuración.</td><td>Auditoría de las respuestas de api/clientes.php: no incluye identificacion ni metodo_pago.</td></tr>
+<tr><td>RNF-USO-01</td><td>Usabilidad</td><td>El sistema debe ser usable en escritorio, tablet y móvil (diseño responsivo).</td><td>Verificación en viewports de 375px, 768px y 1280px sin desbordes horizontales.</td></tr>
+<tr><td>RNF-USO-02</td><td>Usabilidad</td><td>Los formularios deben orientar al usuario con mensajes de error claros y accesibles (aria-invalid).</td><td>Todo campo inválido muestra mensaje y resaltado; revisión por checklist de calidad.</td></tr>
+<tr><td>RNF-ACC-01</td><td>Accesibilidad</td><td>El sistema debe respetar las preferencias de movimiento reducido del usuario.</td><td>Con prefers-reduced-motion, las animaciones (pétalos, contadores, typing) se desactivan.</td></tr>
+<tr><td>RNF-ACC-02</td><td>Accesibilidad</td><td>Los elementos interactivos deben tener etiquetas descriptivas y ser operables por teclado.</td><td>Botones del chatbot y estrellas de calificación incluyen aria-label.</td></tr>
+<tr><td>RNF-CON-01</td><td>Compatibilidad</td><td>El sistema debe funcionar en los navegadores modernos.</td><td>Validación manual en Chrome, Edge y Firefox (últimas dos versiones).</td></tr>
+<tr><td>RNF-CON-02</td><td>Compatibilidad</td><td>El backend debe ejecutarse en PHP 8 con MySQL/MariaDB 10.x (entorno XAMPP).</td><td>Instalación limpia según README con la versión actual de XAMPP.</td></tr>
+<tr><td>RNF-FIA-01</td><td>Fiabilidad</td><td>El sistema debe garantizar la integridad de los datos transaccionales de pedidos e inventario.</td><td>Prueba de pedido concurrente: sin stock insuficiente ni inventario negativo; transacción garantiza atomicidad.</td></tr>
+<tr><td>RNF-FIA-02</td><td>Fiabilidad</td><td>El sistema debe ser tolerante a errores de red y a la apertura del frontend fuera del servidor.</td><td>Al abrir fuera de http://localhost se muestra mensaje explicativo en lugar de fallo silencioso.</td></tr>
+<tr><td>RNF-MAN-01</td><td>Mantenibilidad</td><td>El código debe ser modular, con separación de responsabilidades por archivo y nombres descriptivos.</td><td>Revisión de código: módulos IIFE por dominio, API PHP por recurso, comentarios de cabecera.</td></tr>
+<tr><td>RNF-MAN-02</td><td>Mantenibilidad</td><td>La configuración de conexión a base de datos debe concentrarse en un solo archivo.</td><td>Constantes DB_* definidas una sola vez en api/config.php.</td></tr>
+<tr><td>RNF-POR-01</td><td>Portabilidad</td><td>El frontend debe poder adaptarse a un backend diferente (p. ej. Node/PHP/Laravel o PostgreSQL) sin cambios estructurales.</td><td>La capa de datos (api.js) centraliza las llamadas y normaliza respuestas.</td></tr>
+<tr><td>RNF-DISP-01</td><td>Disponibilidad</td><td>El sistema debe estar disponible durante el horario comercial y, en lo posible, 24/7.</td><td>Apache activo; el chat atiende fuera de horario con respuestas automáticas.</td></tr>
+<tr><td>RNF-DOC-01</td><td>Documentación</td><td>El proyecto debe entregar documentación completa: este ERS, análisis, diseño, desarrollo, pruebas, implementación y README de puesta en marcha.</td><td>Existencia y consistencia de los seis documentos y del README con cuentas demo.</td></tr>
+</table>
+
+<h2>6.2 Requerimientos legales y regulatorios</h2>
+<ul>
+<li><strong>LFPDPPP:</strong> habilitar el aviso de privacidad, el consentimiento, la limitación del uso y, a futuro, los derechos ARCO (acceso, rectificación, cancelación y oposición).</li>
+<li><strong>Política de contraseñas:</strong> longitud mínima de 8 caracteres y complejidad (mayúscula, minúscula, dígito), conforme a buenas prácticas de autenticación (p. ej. guías NIST SP 800-63).</li>
+<li><strong>Comercio electrónico:</strong> exhibir políticas de entrega, garantía de frescura (48 horas) y datos de contacto de la empresa en la información del sitio.</li>
+</ul>
+
+<h1>7. Restricciones, supuestos y dependencias</h1>
+
+<h2>7.1 Restricciones de diseño y tecnológicas</h2>
+<table>
+<tr><th>Restricción</th><th>Descripción</th></tr>
+<tr><td>Plataforma</td><td>Backend en PHP 8 (XAMPP), base de datos MySQL/MariaDB, frontend en HTML/CSS/JavaScript (Tailwind y Font Awesome).</td></tr>
+<tr><td>Contenido</td><td>Textos bilingües ES/EN; moneda COP con opción USD; clasificación visual de datos.</td></tr>
+<tr><td>Seguridad</td><td>Contraseñas con hash; consultas parametrizadas; sesión por cookie; acceso por roles.</td></tr>
+<tr><td>Despliegue</td><td>Entorno XAMPP local o hosting LAMP; sin HTTPS en esta versión (recomendado para producción).</td></tr>
+<tr><td>Alcance legal</td><td>Datos sensibles no visibles; consentimiento obligatorio; cumplimiento LFPDPPP.</td></tr>
+</table>
+
+<h2>7.2 Supuestos</h2>
+<ul>
+<li>El volumen de clientes y pedidos previsto es de baja dimensión (decenas de operaciones diarias), por lo que no se exige escalabilidad horizontal en esta versión.</li>
+<li>Los datos de demostración (clientes, pedidos e interacciones) se cargan automáticamente para la validación del sistema.</li>
+<li>El personal de administración recibirá capacitación mínima provista por el documento de Implementación.</li>
+</ul>
+
+<h2>7.3 Dependencias externas</h2>
+<ul>
+<li>Apache y MySQL activos en el entorno de despliegue.</li>
+<li>Navegador moderno con soporte de fetch, localStorage y CSS Grid/Flexbox.</li>
+<li>Bancos de imágenes con licencia libre (Unsplash License / Openverse CC) para el catálogo.</li>
+</ul>
+
+<h1>8. Matriz de trazabilidad</h1>
+<p>La matriz relaciona cada requerimiento funcional con su módulo, con el caso de uso que lo materializa (documento de Análisis) y con la prueba que lo verifica (documento de Pruebas). Esta trazabilidad es un requisito explícito de las empresas que auditan proyectos de software, pues permite demostrar que todo lo pedido fue analizado, construido y probado, y que no existe funcionalidad no solicitada.</p>
+<table>
+<tr><th>RF</th><th>Descripción abreviada</th><th>Módulo</th><th>Caso de uso (Análisis)</th><th>Prueba (Pruebas)</th></tr>
+<tr><td>RF-AUT-01 a 11</td><td>Registro, login, roles, perfil, contraseñas</td><td>Autenticación</td><td>CU-01 Registro, CU-02 Inicio de sesión, CU-14 Gestión de perfil</td><td>CP-AUT-01 a CP-AUT-12</td></tr>
+<tr><td>RF-PER-01 a 09</td><td>Datos clasificados, aviso de privacidad, validaciones</td><td>Perfil de cliente</td><td>CU-01, CU-14</td><td>CP-PER-01 a CP-PER-09</td></tr>
+<tr><td>RF-CAT-01 a 06</td><td>Catálogo y CRUD de productos</td><td>Catálogo</td><td>CU-03 Navegar catálogo, CU-11 CRUD productos</td><td>CP-CAT-01 a CP-CAT-06</td></tr>
+<tr><td>RF-CAR-01 a 08</td><td>Carrito, pedidos, historial</td><td>Carrito/Pedidos</td><td>CU-04 Carrito, CU-05 Realizar pedido, CU-06 Historial</td><td>CP-CAR-01 a CP-CAR-10</td></tr>
+<tr><td>RF-PED-01 a 03</td><td>Gestión de pedidos (admin)</td><td>Pedidos</td><td>CU-12 Gestión de pedidos</td><td>CP-PED-01 a CP-PED-04</td></tr>
+<tr><td>RF-INV-01 a 04</td><td>Inventario y alertas</td><td>Inventario</td><td>CU-13 Gestión de inventario</td><td>CP-INV-01 a CP-INV-04</td></tr>
+<tr><td>RF-ADM-01 a 03</td><td>Dashboard y acceso restringido</td><td>Panel admin</td><td>CU-10 Panel administrativo</td><td>CP-ADM-01 a CP-ADM-03</td></tr>
+<tr><td>RF-CHAT-01 a 13</td><td>Chatbot completo</td><td>Chatbot</td><td>CU-07, CU-08</td><td>CP-CHAT-01 a CP-CHAT-16</td></tr>
+<tr><td>RF-REP-01 a 08</td><td>Reporte mensual (a, b, c)</td><td>Reporte</td><td>CU-09 Reporte mensual</td><td>CP-REP-01 a CP-REP-08</td></tr>
+<tr><td>RF-CRM-01 a 05</td><td>CRM y enmascarado</td><td>CRM</td><td>CU-10</td><td>CP-CRM-01 a CP-CRM-06</td></tr>
+<tr><td>RF-MUL-01 a 03</td><td>Idioma y moneda</td><td>i18n</td><td>Transversal</td><td>CP-MUL-01 a CP-MUL-03</td></tr>
+<tr><td>RF-SEG-01 a 07</td><td>Seguridad y privacidad</td><td>Seguridad</td><td>Transversal</td><td>CP-SEG-01 a CP-SEG-06</td></tr>
+</table>
+
+<h1>9. Priorización de requerimientos</h1>
+<p>La priorización se realizó con la técnica MoSCoW en sesión conjunta con la administración. El resultado es el siguiente agrupamiento por bloques:</p>
+<table>
+<tr><th>Categoría</th><th>Requerimientos incluidos</th><th>Justificación</th></tr>
+<tr><td>Must (obligatorios)</td><td>RF-AUT-01 a 07; RF-PER-01 a 07; RF-CAT-01, 02, 03, 04, 05; RF-CAR-01 a 08; RF-PED-01 a 03; RF-INV-01, 02, 04; RF-ADM-01 a 03; RF-CHAT-01 a 11; RF-REP-01 a 07; RF-CRM-01 a 05; RF-MUL-01, 02; RF-SEG-01 a 05.</td><td>Constituyen el alcance mínimo viable exigido por la administración (venta, atención por chatbot, clasificación de datos y reporte mensual). Sin ellos el proyecto no cumple su propósito.</td></tr>
+<tr><td>Should (deberían)</td><td>RF-AUT-10, RF-AUT-11; RF-PER-08, RF-PER-09; RF-CAT-06; RF-INV-03; RF-CHAT-12, RF-CHAT-13; RF-REP-08; RF-MUL-03; RF-SEG-06, RF-SEG-07.</td><td>Aportan valor y calidad; pueden diferirse si el calendario lo exige, sin invalidar el negocio.</td></tr>
+<tr><td>Could (podrían)</td><td>Recomendaciones adicionales del motor (celebración de resultados), exportación del reporte a PDF/Excel.</td><td>Mejoras de madurez para versiones siguientes.</td></tr>
+<tr><td>Won't (no por ahora)</td><td>Pasarela de pagos en línea, rastreo GPS, suscripciones, fidelización, backend PostgreSQL, notificaciones por correo.</td><td>Se documentan como trabajo futuro en el documento de Implementación (roadmap).</td></tr>
+</table>
+
+<h1>10. Criterios de aceptación</h1>
+<p>Se definen criterios de aceptación funcionales y de calidad para los entregables de mayor criticidad. Un criterio de aceptación es una condición observable y verificable que el sistema debe satisfacer para que el requerimiento se considere aceptado.</p>
+<table>
+<tr><th>Requerimiento</th><th>Criterio de aceptación</th></tr>
+<tr><td>RF-CHAT-09/10 (calificación y sugerencia)</td><td>Al terminar una conversación, el cliente ve el control de 5 estrellas; al pulsar una estrella, se muestra el campo de sugerencia; al enviar, aparece un mensaje de confirmación y se registra la interacción en la tabla interaccion (verificable en phpMyAdmin).</td></tr>
+<tr><td>RF-REP-02/03/04 (reporte mensual)</td><td>Para un mes con interacciones, el reporte muestra: número de personas atendidas, promedio de calificación, barras de distribución 1-5, porcentaje de satisfacción y lista de recomendaciones generadas a partir de las sugerencias.</td></tr>
+<tr><td>RF-CRM-02/03/04 (enmascarado)</td><td>En el CRM la identificación y el método de pago muestran «Protegido»; la fecha de nacimiento no aparece cruda y solo se muestra la edad; nigún dato sensible viaja en la respuesta de api/clientes.php.</td></tr>
+<tr><td>RF-CAR-04/05 (stock)</td><td>Al solicitar una cantidad mayor al stock, el sistema rechaza el pedido con mensaje claro y el inventario no se modifica; con stock válido, el pedido se crea y el stock disminuye exactamente en la cantidad vendida.</td></tr>
+<tr><td>RF-AUT-03 (contraseñas)</td><td>Contraseñas con menos de 8 caracteres o sin mayúscula/minúscula/número son rechazadas tanto en registro como en cambio de contraseña.</td></tr>
+<tr><td>RF-SEG-04 (roles)</td><td>Un usuario cliente no logra acceder a las acciones de administración: las respuestas de la API devuelven 401 o 403 y las vistas administrativas redirigen al inicio.</td></tr>
+</table>
+
+<h1>11. Validación y verificación de los requerimientos</h1>
+
+<h2>11.1 Plan de validación</h2>
+<p>La validación responde a la pregunta «¿estamos construyendo el sistema correcto?». Se llevó a cabo mediante sesiones de revisión con la administración, utilizando maquetas y flujos de usuario, así como la revisión cruzada con la plantilla de calidad de ERS recomendada por IEEE 830/29148 (lista de control): completitud, consistencia, no ambigüedad, verificabilidad, trazabilidad y factibilidad. El resultado de esa revisión se refleja en las secciones 8, 9 y 10.</p>
+
+<h2>11.2 Plan de verificación (vinculación con la fase de pruebas)</h2>
+<p>La verificación responde a la pregunta «¿estamos construyendo el sistema correctamente?» y se materializa en el documento de Pruebas (fase 4), donde cada RF de esta especificación se vincula con al menos un caso de prueba (matriz de trazabilidad de pruebas). Los hitos de verificación previstos son: revisión de diseño respecto a requisitos (fase de diseño), pruebas funcionales del sistema (fase de pruebas), pruebas de seguridad, y prueba de aceptación del usuario (UAT) durante la implementación.</p>
+
+<h2>11.3 Criterios de aceptación global del proyecto</h2>
+<ul>
+<li>El 100% de los requerimientos clasificados como «Must» deben cumplirse y verificarse mediante pruebas exitosas.</li>
+<li>La cobertura de pruebas de los requerimientos «Must» debe ser al menos de un caso de prueba por requerimiento.</li>
+<li>No deben existir defectos críticos ni mayores abiertos al cierre de la fase de pruebas.</li>
+<li>El reporte mensual debe demostrar los tres bloques solicitados (a, b, c) con datos de demostración.</li>
+<li>La entrega debe incluir los seis documentos de esta serie documental.</li>
+</ul>
+
+<h1>12. Aprobaciones</h1>
+<table>
+<tr><th>Rol</th><th>Nombre / Área</th><th>Fecha</th><th>Firma</th></tr>
+<tr><td>Gerente de proyecto</td><td>Administración Flora Elegante</td><td>(pendiente)</td><td></td></tr>
+<tr><td>Analista / Líder técnico</td><td>Equipo de desarrollo</td><td>(pendiente)</td><td></td></tr>
+<tr><td>Responsable de datos</td><td>Área jurídica / privacidad</td><td>(pendiente)</td><td></td></tr>
+</table>
+
+<h2>Historial de versiones (control de documentos)</h2>
+<table>
+<tr><th>Versión</th><th>Fecha</th><th>Autor</th><th>Descripción del cambio</th></tr>
+<tr><td>1.0</td><td>Fecha de emisión</td><td>Equipo de desarrollo</td><td>Emisión inicial de la especificación de requerimientos.</td></tr>
+</table>
+
+</body>
+</html>

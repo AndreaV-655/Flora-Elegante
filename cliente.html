@@ -1,0 +1,305 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mi Cuenta · Flora Elegante</title>
+    <link rel="icon" href="img/logo.svg" type="image/svg+xml">
+    <script src="vendor/tailwind.js"></script>
+    <script src="js/tailwind-config.js"></script>
+    <link href="vendor/fonts/fonts.css" rel="stylesheet">
+    <link rel="stylesheet" href="vendor/fontawesome/all.min.css">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body data-page="cliente" class="bg-cream font-body text-charcoal">
+
+    <!-- ===== NAV ===== -->
+    <nav class="fixed top-0 left-0 right-0 z-50 bg-forest/95 backdrop-blur-sm text-white shadow-lg">
+        <div class="max-w-7xl mx-auto px-6 py-4 flex items-center justify-between">
+            <a href="#inicio" class="flex items-center gap-3">
+                <img src="img/logo.svg" alt="Logo Flora Elegante" class="w-10 h-10">
+                <span class="font-display text-xl tracking-wide">Flora Elegante</span>
+            </a>
+            <div class="hidden md:flex items-center gap-8">
+                <a href="#catalogo" class="hover:text-gold transition">Catálogo</a>
+                <a href="#datos" class="hover:text-gold transition">Mis datos</a>
+                <a href="#historial" class="hover:text-gold transition">Historial</a>
+                <div class="hidden md:flex items-center gap-2 mr-2">
+                    <button id="langToggle" class="text-xs font-bold px-2.5 py-1.5 rounded-lg border border-white/30 hover:border-gold hover:text-gold transition" aria-label="Cambiar idioma">EN</button>
+                    <button id="curToggle" class="text-xs font-bold px-2.5 py-1.5 rounded-lg border border-white/30 hover:border-gold hover:text-gold transition" aria-label="Cambiar moneda">USD</button>
+                </div>
+                <div id="navAuth" class="flex items-center gap-5"></div>
+                <button id="cartBtn" class="relative w-10 h-10 rounded-full bg-white/10 hover:bg-gold hover:text-forest text-white flex items-center justify-center transition" aria-label="Abrir carrito">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    <span class="cart-badge hidden absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-terra text-white text-[11px] font-bold flex items-center justify-center">0</span>
+                </button>
+            </div>
+            <div class="md:hidden flex items-center gap-2">
+                <button id="langToggleMv" class="text-xs font-bold px-2 py-1 rounded-lg border border-white/30 hover:border-gold hover:text-gold transition">EN</button>
+                <button id="curToggleMv" class="text-xs font-bold px-2 py-1 rounded-lg border border-white/30 hover:border-gold hover:text-gold transition">USD</button>
+                <button id="cartBtnMv" class="relative w-10 h-10 rounded-full bg-white/10 text-white flex items-center justify-center" aria-label="Abrir carrito">
+                    <i class="fa-solid fa-cart-shopping"></i>
+                    <span class="cart-badge hidden absolute -top-1 -right-1 min-w-[20px] h-5 px-1 rounded-full bg-terra text-white text-[11px] font-bold flex items-center justify-center">0</span>
+                </button>
+                <button id="mobileMenuBtn" class="text-white text-xl" aria-label="Abrir menú">
+                    <i class="fa-solid fa-bars"></i>
+                </button>
+            </div>
+        </div>
+        <!-- Menú móvil -->
+        <div id="mobileMenu" class="md:hidden hidden bg-forest/95 backdrop-blur-md px-6 pb-6">
+            <a href="#catalogo" class="block py-3 text-white/80 hover:text-white border-b border-white/10">Catálogo</a>
+            <a href="#datos" class="block py-3 text-white/80 hover:text-white border-b border-white/10">Mis datos</a>
+            <a href="#historial" class="block py-3 text-white/80 hover:text-white border-b border-white/10">Historial</a>
+            <div id="mobileAuth" class="pt-3 flex flex-col gap-1"></div>
+        </div>
+    </nav>
+
+    <!-- ===== BIENVENIDA ===== -->
+    <header id="inicio" class="pt-32 pb-16 px-6 bg-gradient-to-br from-forest via-forest-dark to-charcoal text-white">
+        <div class="max-w-7xl mx-auto text-center reveal">
+            <p class="text-gold tracking-[0.25em] uppercase text-sm mb-4">Tu espacio personal</p>
+            <h1 id="saludoCliente" class="font-display font-bold text-4xl md:text-5xl">Mi Cuenta</h1>
+            <div class="w-20 h-0.5 bg-gold mx-auto mt-6"></div>
+            <p class="text-white/70 mt-4 max-w-xl mx-auto">Explora la colección, mantén tus datos al día y consulta el historial de tus compras.</p>
+        </div>
+    </header>
+
+    <!-- ===== CATÁLOGO (solo productos) ===== -->
+    <section id="catalogo" class="py-20 px-6">
+        <div class="max-w-7xl mx-auto">
+            <div class="text-center mb-14 reveal">
+                <p class="text-terra font-body tracking-[0.2em] uppercase text-sm mb-3">Nuestra colección</p>
+                <h2 class="font-display font-bold text-3xl md:text-4xl text-charcoal">Arreglos Exclusivos</h2>
+                <div class="w-20 h-0.5 bg-gold mx-auto mt-6"></div>
+            </div>
+            <div class="relative reveal">
+                <div id="carouselTrack" class="carousel-track flex gap-6 lg:gap-8 overflow-x-auto snap-x snap-mandatory scroll-smooth pb-2 -mx-6 px-6">
+                    <!-- Productos insertados por JS -->
+                </div>
+                <button id="carPrev" class="carousel-arrow left-0" aria-label="Anterior">
+                    <i class="fa-solid fa-chevron-left"></i>
+                </button>
+                <button id="carNext" class="carousel-arrow right-0" aria-label="Siguiente">
+                    <i class="fa-solid fa-chevron-right"></i>
+                </button>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== MIS DATOS (perfil editable) ===== -->
+    <section id="datos" class="py-20 px-6 bg-cream-light">
+        <div class="max-w-4xl mx-auto">
+            <div class="text-center mb-12 reveal">
+                <p class="text-terra font-body tracking-[0.2em] uppercase text-sm mb-3">Información de registro</p>
+                <h2 id="registroTitle" class="font-display font-bold text-3xl md:text-4xl text-charcoal">Mi Perfil</h2>
+                <div class="w-20 h-0.5 bg-gold mx-auto mt-6"></div>
+                <p id="registroSubtitle" class="text-muted mt-4 max-w-xl mx-auto">Actualiza tu información cuando lo necesites. Tu correo no puede modificarse.</p>
+            </div>
+
+            <form id="customerForm" class="bg-white rounded-2xl shadow-lg shadow-forest/5 p-8 md:p-12 reveal" novalidate>
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-x-8 gap-y-6">
+
+                    <!-- Datos Públicos -->
+                    <div>
+                        <label class="flex items-center gap-2 mb-2 text-sm font-bold text-charcoal">
+                            Nombre completo <span class="tag-publico text-[10px] px-2 py-0.5 rounded-full">PÚBLICO</span>
+                        </label>
+                        <input type="text" name="nombre" required placeholder="Ej: María García López"
+                            class="w-full border border-bord rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20 transition">
+                    </div>
+                    <div>
+                        <label class="flex items-center gap-2 mb-2 text-sm font-bold text-charcoal">
+                            Correo electrónico <span class="tag-publico text-[10px] px-2 py-0.5 rounded-full">PÚBLICO</span>
+                        </label>
+                        <input type="email" name="email" required placeholder="maria@correo.com"
+                            class="w-full border border-bord rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20 transition">
+                    </div>
+
+                    <!-- Cambio de contraseña opcional -->
+                    <div id="passWrap" class="hidden">
+                        <label class="flex items-center gap-2 mb-2 text-sm font-bold text-charcoal">
+                            Nueva contraseña <span class="tag-sensible text-[10px] px-2 py-0.5 rounded-full">SENSIBLE</span>
+                        </label>
+                        <input type="password" name="password" minlength="8" placeholder="Crea una contraseña segura"
+                            class="w-full border border-bord rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-terra focus:ring-2 focus:ring-terra/20 transition">
+                        <p class="text-xs text-muted mt-2">Mínimo 8 caracteres, con al menos una mayúscula, una minúscula y un número.</p>
+                    </div>
+                    <div id="pass2Wrap" class="hidden">
+                        <label class="flex items-center gap-2 mb-2 text-sm font-bold text-charcoal">
+                            Confirmar contraseña <span class="tag-sensible text-[10px] px-2 py-0.5 rounded-full">SENSIBLE</span>
+                        </label>
+                        <input type="password" name="password2" placeholder="Repite tu contraseña"
+                            class="w-full border border-bord rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-terra focus:ring-2 focus:ring-terra/20 transition">
+                    </div>
+                    <div id="passChangeRow" class="hidden md:col-span-2 -mt-2">
+                        <label class="flex items-center gap-2 text-sm text-muted cursor-pointer">
+                            <input type="checkbox" id="changePassCheck" class="w-4 h-4 accent-leaf rounded">
+                            Quiero cambiar mi contraseña
+                        </label>
+                    </div>
+
+                    <!-- Datos Semiprivados -->
+                    <div>
+                        <label class="flex items-center gap-2 mb-2 text-sm font-bold text-charcoal">
+                            Teléfono <span class="tag-semiprivado text-[10px] px-2 py-0.5 rounded-full">SEMIPRIVADO</span>
+                        </label>
+                        <input type="tel" name="telefono" required placeholder="+57 300 123 4567"
+                            class="w-full border border-bord rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20 transition">
+                    </div>
+                    <div>
+                        <label class="flex items-center gap-2 mb-2 text-sm font-bold text-charcoal">
+                            Dirección de entrega <span class="tag-semiprivado text-[10px] px-2 py-0.5 rounded-full">SEMIPRIVADO</span>
+                        </label>
+                        <input type="text" name="direccion" required placeholder="Calle, número, colonia, ciudad"
+                            class="w-full border border-bord rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20 transition">
+                    </div>
+
+                    <!-- Datos Privados -->
+                    <div>
+                        <label class="flex items-center gap-2 mb-2 text-sm font-bold text-charcoal">
+                            Fecha de nacimiento <span class="tag-privado text-[10px] px-2 py-0.5 rounded-full">PRIVADO</span>
+                        </label>
+                        <input type="date" name="nacimiento"
+                            class="w-full border border-bord rounded-lg px-4 py-3 text-sm text-muted focus:outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20 transition">
+                    </div>
+                    <div>
+                        <label class="flex items-center gap-2 mb-2 text-sm font-bold text-charcoal">
+                            Preferencias florales <span class="tag-privado text-[10px] px-2 py-0.5 rounded-full">PRIVADO</span>
+                        </label>
+                        <select name="preferencias"
+                            class="w-full border border-bord rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20 transition text-muted">
+                            <option value="">Selecciona tus favoritas</option>
+                            <option value="rosas">Rosas</option>
+                            <option value="lirios">Lirios</option>
+                            <option value="girasoles">Girasoles</option>
+                            <option value="tulipanes">Tulipanes</option>
+                            <option value="orquideas">Orquídeas</option>
+                            <option value="tropicales">Flores tropicales</option>
+                            <option value="mixtas">Mixtas</option>
+                        </select>
+                    </div>
+
+                    <!-- Datos Sensibles -->
+                    <div>
+                        <label class="flex items-center gap-2 mb-2 text-sm font-bold text-charcoal">
+                            Número de identificación <span class="tag-sensible text-[10px] px-2 py-0.5 rounded-full">SENSIBLE</span>
+                        </label>
+                        <input type="text" name="identificacion" placeholder="INE / Pasaporte (opcional)"
+                            class="w-full border border-bord rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-terra focus:ring-2 focus:ring-terra/20 transition">
+                    </div>
+                    <div>
+                        <label class="flex items-center gap-2 mb-2 text-sm font-bold text-charcoal">
+                            Método de pago preferido <span class="tag-sensible text-[10px] px-2 py-0.5 rounded-full">SENSIBLE</span>
+                        </label>
+                        <select name="pago"
+                            class="w-full border border-bord rounded-lg px-4 py-3 text-sm focus:outline-none focus:border-terra focus:ring-2 focus:ring-terra/20 transition text-muted">
+                            <option value="">Selecciona un método</option>
+                            <option value="tarjeta_credito">Tarjeta de crédito</option>
+                            <option value="tarjeta_debito">Tarjeta de débito</option>
+                            <option value="transferencia">Transferencia bancaria</option>
+                            <option value="efectivo">Efectivo contra entrega</option>
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Aviso de privacidad -->
+                <div class="mt-8 p-4 bg-cream rounded-xl border border-bord">
+                    <div class="flex items-start gap-3">
+                        <i class="fa-solid fa-shield-halved text-leaf mt-0.5"></i>
+                        <p class="text-xs text-muted leading-relaxed">
+                            Tus datos son tratados conforme a la Ley Federal de Protección de Datos Personales en Posesión de los Particulares.
+                            Los datos <strong class="text-charcoal">públicos</strong> pueden mostrarse en tu perfil visible,
+                            los <strong class="text-charcoal">semiprivados</strong> se comparten solo con el equipo de entregas,
+                            los <strong class="text-charcoal">privados</strong> se usan para personalizar tu experiencia,
+                            las <strong class="text-charcoal">contraseñas</strong> se almacenan únicamente como hash criptográfico (nunca en texto plano)
+                            y los <strong class="text-charcoal">sensibles</strong> se almacenan cifrados de extremo a extremo.
+                        </p>
+                    </div>
+                </div>
+
+                <div class="mt-8 flex flex-col sm:flex-row items-center gap-4">
+                    <button type="submit" class="btn-primary w-full sm:w-auto">
+                        <i class="fa-solid fa-floppy-disk mr-2"></i>Guardar cambios
+                    </button>
+                    <label class="flex items-center gap-2 text-sm text-muted cursor-pointer">
+                        <input type="checkbox" id="privacyCheck" class="w-4 h-4 accent-leaf rounded">
+                        Acepto el aviso de privacidad
+                    </label>
+                </div>
+                <p id="formError" class="mt-4 text-terra text-sm hidden"></p>
+            </form>
+        </div>
+    </section>
+
+    <!-- ===== HISTORIAL DE COMPRAS ===== -->
+    <section id="historial" class="py-20 px-6">
+        <div class="max-w-4xl mx-auto">
+            <div class="text-center mb-12 reveal">
+                <p class="text-terra font-body tracking-[0.2em] uppercase text-sm mb-3">Tus pedidos</p>
+                <h2 class="font-display font-bold text-3xl md:text-4xl text-charcoal">Historial de Compras</h2>
+                <div class="w-20 h-0.5 bg-gold mx-auto mt-6"></div>
+                <p class="text-muted mt-4">Pedidos realizados: <strong id="historialCount" class="text-charcoal">0</strong></p>
+            </div>
+            <div id="historialList" class="space-y-6 reveal">
+                <!-- Pedidos insertados por JS -->
+            </div>
+            <div id="historialEmpty" class="hidden text-center bg-white rounded-2xl border border-dashed border-bord p-12 reveal">
+                <img src="img/logo.svg" alt="" class="w-16 h-16 mx-auto mb-4 opacity-40">
+                <p class="text-muted">Aún no tienes pedidos. ¡Explora el catálogo y sorprende a alguien especial!</p>
+                <a href="#catalogo" class="btn-primary inline-block mt-6">Ver Colección</a>
+            </div>
+        </div>
+    </section>
+
+    <!-- ===== FOOTER ===== -->
+    <footer class="bg-forest text-white py-10 px-6">
+        <div class="max-w-7xl mx-auto flex flex-col md:flex-row items-center justify-between gap-6">
+            <div class="flex items-center gap-3">
+                <img src="img/logo.svg" alt="Logo Flora Elegante" class="w-9 h-9">
+                <span class="font-display text-lg">Flora Elegante</span>
+            </div>
+            <p class="text-white/50 text-sm">&copy; 2026 Flora Elegante · Flores que hablan por ti</p>
+        </div>
+    </footer>
+
+    <!-- ===== CARRITO (panel lateral) ===== -->
+    <div id="cartOverlay" class="fixed inset-0 bg-forest/60 backdrop-blur-sm z-[90] opacity-0 pointer-events-none transition-opacity duration-300"></div>
+    <aside id="cartDrawer" class="fixed top-0 right-0 h-full w-[400px] max-w-[92vw] bg-white z-[95] shadow-2xl translate-x-full transition-transform duration-300 flex flex-col">
+        <div class="bg-forest text-white px-6 py-5 flex items-center justify-between flex-shrink-0">
+            <h3 class="font-display font-bold text-xl"><i class="fa-solid fa-cart-shopping text-gold mr-2"></i>Tu carrito</h3>
+            <button id="cartClose" class="text-white/60 hover:text-white transition text-lg" aria-label="Cerrar carrito">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div id="cartItems" class="flex-1 overflow-y-auto px-6 py-2"></div>
+        <div id="cartEmpty" class="flex-1 hidden flex-col items-center justify-center gap-3 px-6 text-center">
+            <i class="fa-solid fa-basket-shopping text-6xl text-bord"></i>
+            <p class="text-muted text-sm">Tu carrito está vacío.<br>Agrega un arreglo de nuestra colección.</p>
+        </div>
+        <div id="cartFooter" class="border-t border-bord p-6 bg-cream/50 flex-shrink-0 hidden">
+            <div class="flex items-center justify-between mb-4">
+                <span class="text-sm font-bold text-charcoal uppercase tracking-wide">Total</span>
+                <span id="cartTotal" class="font-display font-bold text-xl text-forest">$0 COP</span>
+            </div>
+            <p class="text-xs text-muted mb-4"><i class="fa-solid fa-truck-fast text-leaf mr-1"></i>Entrega gratuita en la zona metropolitana.</p>
+            <button id="checkoutBtn" class="btn-primary w-full">
+                <i class="fa-solid fa-bag-shopping mr-2"></i>Finalizar compra
+            </button>
+        </div>
+
+    <!-- Toasts + menú móvil -->
+    <div id="toastContainer" class="fixed bottom-6 right-6 z-[90] space-y-2 pointer-events-none"></div>
+
+    <script src="js/i18n.js"></script>
+    <script src="js/data.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/ui.js"></script>
+    <script src="js/auth.js"></script>
+    <script src="js/cart.js"></script>
+    <script src="js/catalog.js"></script>
+    <script src="js/form.js"></script>
+    <script src="js/historial.js"></script>
+    <script src="js/main.js"></script>
+</body>
+</html>
