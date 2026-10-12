@@ -22,8 +22,18 @@ const DB_CHARSET = 'utf8mb4';
 const TIMEZONE = 'America/Bogota';
 
 // ============================================================
-// NOTA
+// ASISTENTE CON IA (Google Gemini)
 // ------------------------------------------------------------
-// El envío de correo del recibo se retiró: el recibo solo genera su
-// código único y se muestra al cliente en pantalla.
+// La clave real vive en "secretos.php", un archivo LOCAL que NO
+// se sube a git (ver .gitignore). Aquí quedan solo los valores por
+// defecto por si ese archivo no existe todavía.
+//
+// Si GEMINI_API_KEY queda vacía, el chatbot funciona igual con su
+// lógica local por reglas. Consíguela gratis en
+// https://aistudio.google.com/apikey
 // ============================================================
+if (is_file(__DIR__ . '/secretos.php')) {
+    require_once __DIR__ . '/secretos.php';
+}
+if (!defined('GEMINI_API_KEY')) define('GEMINI_API_KEY', '');
+if (!defined('GEMINI_MODEL'))   define('GEMINI_MODEL', 'gemini-3.5-flash');

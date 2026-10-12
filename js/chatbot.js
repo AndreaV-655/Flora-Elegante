@@ -17,6 +17,7 @@ const Chat = (() => {
         lastProduct: null, // último arreglo mostrado, para seguimientos tipo "sí, agrégalo"
         carouselPage: 0, // página actual del carrusel de arreglos
         carouselVisited: false, // ya se mostró algún carrusel
+        history: [], // conversación reciente para el asistente con IA
     };
 
     const ARREGLOS_POR_PAGINA = 3; // cuántos arreglos distintos por carrusel
@@ -31,17 +32,39 @@ const Chat = (() => {
         return String(s).toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '');
     }
 
-    // Busca un producto mencionado por nombre (ES o EN, completo o palabras clave)
-    function findProducto(text) {
+    // Escapa texto antes de inyectarlo como HTML en el chat
+    function escapar(s) {
+        return String(s ?? '').replace(/[&<>"']/g, c => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+        }[c]));
+    }
+
+    // Palabras genéricas que no identifican un arreglo concreto
+    const PALABRAS_GENERICAS = new Set([
+        'de', 'del', 'la', 'el', 'los', 'las', 'y', 'con',
+        'arreglo', 'arreglos', 'ramo', 'ramos', 'canasta', 'caja', 'box', 'set',
+        'flor', 'flores', 'flower', 'flowers',
+        'bouquet', 'bouquets', 'arrangement', 'arrangements', 'basket',
+    ]);
+
+    // Palabras distintivas de un producto (quita genéricas y muy cortas)
+    function palabrasClave(p) {
+        return norm(p.nombre).split(/\s+/)
+            .concat(norm(p.nombreEn).split(/\s+/))
+            .filter(w => w.length > 2 && !PALABRAS_GENERICAS.has(w));
+    }
+
+    // Busca TODOS los arreglos que menciona el texto (por nombre o palabra clave)
+    function findProductos(text) {
         const t = norm(text);
-        let p = Data.productos.find(p => t.includes(norm(p.nombre)) || t.includes(norm(p.nombreEn)));
-        if (p) return p;
-        const matchPorPalabras = p => {
-            const palabras = norm(p.nombre).split(' ').concat(norm(p.nombreEn).split(' '))
-                .filter(w => w.length > 3);
-            return palabras.some(w => t.includes(w));
-        };
-        return Data.productos.find(matchPorPalabras) || null;
+
+        const porNombreCompleto = Data.productos.filter(p =>
+            t.includes(norm(p.nombre)) || t.includes(norm(p.nombreEn)));
+        if (porNombreCompleto.length) return porNombreCompleto;
+
+        return Data.productos.filter(p =>
+            palabrasClave(p).some(w =>
+                new RegExp('\\b' + w.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') + '\\b').test(t)));
     }
 
     // Permite a los botones dentro del chat enviar mensajes / acciones
@@ -74,15 +97,7 @@ const Chat = (() => {
     const T = {
         saludo1: () => I18n.te('¡Hola! Bienvenido a Flora Elegante. Soy <strong>Flora</strong>, tu asistente virtual.',
             'Hello! Welcome to Flora Elegante. I\'m <strong>Flora</strong>, your virtual assistant.'),
-        saludo2: () => I18n.te('Puedo mostrarte el catálogo, darte precios y tiempos de entrega, consultar tu carrito y <strong>agregar arreglos al carrito desde aquí</strong>. ¿Qué te gustaría hacer?',
-            'I can show you the catalog, give you prices and delivery times, check your cart and <strong>add arrangements to the cart right from here</strong>. What would you like to do?'),
         qrArreglos: () => I18n.te('Ver arreglos', 'View arrangements'),
-        qrCarrito: () => I18n.te('Mi carrito', 'My cart'),
-        qrPrecios: () => I18n.te('Precios', 'Prices'),
-        qrEntregas: () => I18n.te('Entregas', 'Deliveries'),
-        qrPago: () => I18n.te('Métodos de pago', 'Payment methods'),
-        qrFin: () => I18n.te('Eso es todo, gracias', 'That\'s all, thanks'),
-        qrNueva: () => I18n.te('Nueva consulta', 'New question'),
         holaDeNuevo: () => I18n.te('¡Hola de nuevo! ¿Quieres ver el catálogo, consultar tu carrito o tienes otra pregunta?',
             'Hi again! Would you like to see the catalog, check your cart, or do you have another question?'),
         finConv: () => I18n.te('¡Me alegra haberte ayudado! Antes de terminar, ¿podrías calificar nuestra atención?',
@@ -93,7 +108,6 @@ const Chat = (() => {
         masArreglosIntro: () => I18n.te('Con gusto, aquí tienes más de nuestros arreglos:', 'Sure, here are more of our arrangements:'),
         masArreglosFin: () => I18n.te('…y con esto terminamos el catálogo. Vuelve a pulsar "Ver más arreglos" si quieres verlos desde el principio:',
             '…and that completes the catalog. Tap "See more arrangements" again to view from the start:'),
-        qrOcasion: () => I18n.te('¿Para qué ocasión?', 'What\'s the occasion?'),
         agregado: p => I18n.te(
             `Listo: <strong>${Data.nombre(p)}</strong> (${Data.formatPrecio(p.precio)}) quedó en tu carrito. ¿Algo más?`,
             `Done: <strong>${Data.nombre(p)}</strong> (${Data.formatPrecio(p.precio)}) is now in your cart. Anything else?`),
@@ -117,6 +131,25 @@ const Chat = (() => {
         despedida: () => I18n.te('¡Perfecto! Que tengas un excelente día. Vuelve cuando quieras.', 'Perfect! Have a wonderful day. Come back anytime.'),
         hastaPronto: () => I18n.te('Si necesitas algo más, no dudes en escribirnos. ¡Hasta pronto!', 'If you need anything else, don\'t hesitate to write to us. See you soon!'),
         toastRegistro: () => I18n.te('Calificación y sugerencia registradas', 'Rating and suggestion saved'),
+
+        // Iniciar sesión desde el chat
+        loginIntro: () => I18n.te('Claro. Escribe tu correo y contraseña para iniciar sesión:', 'Sure. Enter your email and password to log in:'),
+        loginEmail: () => I18n.te('Correo electrónico', 'Email address'),
+        loginPass: () => I18n.te('Contraseña', 'Password'),
+        loginBtn: () => I18n.te('Iniciar sesión', 'Log in'),
+        loginCampos: () => I18n.te('Completa correo y contraseña.', 'Please fill in email and password.'),
+        loginError: () => I18n.te('No pudimos iniciar sesión. Inténtalo de nuevo.', 'We couldn\'t log you in. Please try again.'),
+        loginOk: n => I18n.te(`¡Listo, ${n}! Tu sesión está iniciada.`, `Done, ${n}! You are logged in.`),
+        sesionActiva: n => I18n.te(`Ya tienes la sesión iniciada como <strong>${n}</strong>.`, `You are already logged in as <strong>${n}</strong>.`),
+
+        // Finalizar pedido desde el chat
+        pedidoSinCarrito: () => I18n.te('Tu carrito está vacío. Agrega arreglos y luego confirmo tu pedido.', 'Your cart is empty. Add arrangements and I\'ll place your order.'),
+        pedidoSesion: () => I18n.te('Para confirmar tu pedido, primero inicia sesión:', 'To confirm your order, log in first:'),
+        pedidoProcesando: n => I18n.te(`Perfecto, voy a confirmar tu pedido con <strong>${n}</strong> artículo${n > 1 ? 's' : ''}...`, `Great, I\'ll confirm your order with <strong>${n}</strong> item${n > 1 ? 's' : ''}...`),
+
+        // La compra requiere sesión iniciada
+        compraSesion: () => I18n.te('Para realizar una compra, primero necesitas iniciar sesión:', 'To make a purchase, you need to log in first:'),
+        agregarSesion: () => I18n.te('Para agregar arreglos al carrito, primero inicia sesión:', 'To add arrangements to your cart, please log in first:'),
     };
 
     function init() {
@@ -140,14 +173,8 @@ const Chat = (() => {
             input.focus();
 
             if (chatState.phase === 'greeting') {
-                setTimeout(() => {
-                    addBotMessage(T.saludo1());
-                    setTimeout(() => {
-                        addBotMessage(T.saludo2());
-                        showQuickReplies([T.qrArreglos(), T.qrCarrito(), T.qrPrecios(), T.qrEntregas()]);
-                        chatState.phase = 'conversation';
-                    }, 800);
-                }, 400);
+                chatState.phase = 'conversation';
+                setTimeout(() => addBotMessage(T.saludo1()), 400);
             }
         }
 
@@ -162,7 +189,6 @@ const Chat = (() => {
             const text = input.value.trim();
             if (!text) return;
             input.value = '';
-            removeQuickReplies();
             addUserMessage(text);
             chatState.messageCount++;
 
@@ -186,11 +212,38 @@ const Chat = (() => {
                 return;
             }
 
-            // 2. Producto específico por nombre
-            const prod = findProducto(text);
-            if (prod) {
-                chatState.lastProduct = prod.id;
-                respondProducto(prod);
+            // 1b. Finalizar / pagar el pedido
+            if (/finalizar|checkout|pagar|\bpay\b|place order|complete (my )?order|pay now|(hacer|realizar|confirmar|cerrar|completar) (mi |el |la )?(pedido|compra|orden)/.test(t)) {
+                respondCheckout();
+                return;
+            }
+
+            // 1c. Iniciar sesión
+            if (/iniciar sesi|iniciar secion|log ?in|log ?me|sign ?in|entrar|acceder|mi sesion|mi cuenta/.test(t)) {
+                respondLogin();
+                return;
+            }
+
+            // 1d. Quiere comprar → sin sesión, pedirle que inicie sesión
+            if (/\bcomprar\b|\bcompras?\b|comprarlo|comprarla|\badquirir\b|\bbuy\b|\bpurchase\b/.test(t)) {
+                if (!Auth.session()) {
+                    showTyping(() => {
+                        addBotMessage(T.compraSesion());
+                        addLoginForm();
+                    }, 500);
+                    return;
+                }
+                // Con sesión: si no mencionó un arreglo, mostrar el catálogo para elegir
+                if (!findProductos(text).length) {
+                    respondCatalogo();
+                    return;
+                }
+            }
+
+            // 2. Arreglo(s) específico(s) por nombre o palabra clave
+            const prods = findProductos(text);
+            if (prods.length) {
+                respondProductos(prods);
                 return;
             }
 
@@ -199,8 +252,15 @@ const Chat = (() => {
                 /^(si|sip|claro|dale|vale|va|ok|ese|ese mismo|agr[e]?galo|agregar|add it|yes|yeah|sure)\b/.test(t)) {
                 const p = Data.productos.find(x => x.id === chatState.lastProduct);
                 if (p) {
-                    Cart.add(p.id);
-                    botReply(T.agregado(p), [T.qrCarrito(), T.qrArreglos()]);
+                    if (!Auth.session()) {
+                        showTyping(() => {
+                            addBotMessage(T.agregarSesion());
+                            addLoginForm();
+                        }, 400);
+                    } else {
+                        Cart.add(p.id);
+                        botReply(T.agregado(p));
+                    }
                 }
                 return;
             }
@@ -247,7 +307,7 @@ const Chat = (() => {
 
             // Saludo repetido
             if (['hola', 'buenos', 'buenas', 'saludos', 'hello', 'hi ', 'hey'].some(k => t.includes(k)) && chatState.messageCount > 1) {
-                botReply(T.holaDeNuevo(), [T.qrArreglos(), T.qrCarrito()]);
+                botReply(T.holaDeNuevo());
                 return;
             }
 
@@ -256,19 +316,55 @@ const Chat = (() => {
             for (const r of Data.botResponses) {
                 if (r.keywords.some(k => t.includes(norm(k)))) { resp = r.resp; break; }
             }
-            if (!resp) resp = Data.defaultResp;
 
-            botReply(resp(), chatState.messageCount <= 2
-                ? [T.qrArreglos(), T.qrCarrito(), T.qrPrecios(), T.qrEntregas()]
-                : [T.qrFin(), T.qrArreglos()]);
+            // Si el tema no está en la base local, responde el asistente con IA
+            // (Gemini 2.0 Flash). Sin clave configurada cae al texto local.
+            if (!resp) {
+                consultarIA(text);
+                return;
+            }
+
+            botReply(resp());
         }
 
-        function botReply(html, quickReplies = null) {
+        // ---------- Asistente con IA (Gemini 2.0 Flash) ----------
+        // Mantiene el objetivo del chatbot: las reglas locales resuelven las
+        // acciones (carrito, catálogo, pedido, sesión) y la IA redacta lo demás.
+        async function consultarIA(texto) {
+            chatState.history.push({ role: 'user', content: texto });
+            chatState.history = chatState.history.slice(-10);
+            try {
+                const r = await API.chatIA(chatState.history, contextoIA());
+                if (r && String(r).trim()) {
+                    chatState.history.push({ role: 'assistant', content: String(r) });
+                    chatState.history = chatState.history.slice(-10);
+                    botReply(escapar(String(r)).replace(/\n/g, '<br>'));
+                    return;
+                }
+            } catch (e) { /* sin IA disponible: seguimos con lo local */ }
+            botReply(Data.defaultResp());
+        }
+
+        // Contexto que se le entrega a la IA para que no invente datos.
+        function contextoIA() {
+            const catalogo = Data.productos
+                .map(p => `- ${Data.nombre(p)}: ${Data.formatPrecio(p.precio)}`)
+                .join('\n');
+            return [
+                'Negocio: Flora Elegante (florería).',
+                'Teléfono: +52 55 9876 5432. Dirección: Av. Reforma 512, Col. Juárez, CDMX.',
+                'Horario: lunes a sábado 8:00-20:00; domingo 9:00-14:00.',
+                'Entregas: estándar de 2 a 4 horas; express 1 hora con costo adicional.',
+                'Pagos: tarjeta, transferencia, OXXO Pay y efectivo contra entrega.',
+                'El cliente puede iniciar sesión y finalizar su pedido (los productos del carrito) con los botones del chat.',
+                'Catálogo de arreglos:',
+                catalogo,
+            ].join('\n');
+        }
+
+        function botReply(html) {
             const delay = Math.min(1600, 500 + html.length * 6);
-            showTyping(() => {
-                addBotMessage(html);
-                if (quickReplies) showQuickReplies(quickReplies);
-            }, delay);
+            showTyping(() => addBotMessage(html), delay);
         }
 
         function respondCatalogo() {
@@ -298,15 +394,18 @@ const Chat = (() => {
         }
         window.ShowMoreArrangements = showMoreArrangements;
 
-        function respondProducto(p) {
+        // Muestra SOLO los arreglos que pidió el cliente (no todo el catálogo)
+        function respondProductos(prods) {
+            chatState.lastProduct = prods[0].id;
+            chatState.carouselVisited = true;
             showTyping(() => {
-                addBotMessage(
-                    `<strong>${Data.nombre(p)}</strong><br>${Data.desc(p)}` +
-                    `<span class="block mt-1 font-bold text-terra">${Data.formatPrecio(p.precio)}</span>` +
-                    `<button onclick="Cart.add(${p.id})" class="mt-2 w-full bg-leaf hover:bg-leaf-light text-white font-bold text-xs py-2 rounded-lg transition cursor-pointer">` +
-                    `<i class="fa-solid fa-cart-plus mr-1"></i> ${T.agregarCarrito()}</button>` +
-                    `<button onclick="ShowMoreArrangements()" class="mt-1.5 w-full border border-bord hover:bg-cream text-charcoal font-bold text-xs py-2 rounded-lg transition cursor-pointer">${T.verMas()}</button>`
-                );
+                const intro = prods.length === 1
+                    ? I18n.te(`¡Claro! Aquí tienes <strong>${Data.nombre(prods[0])}</strong>:`,
+                              `Of course! Here is <strong>${Data.nombre(prods[0])}</strong>:`)
+                    : I18n.te('Estos son los arreglos que coinciden con lo que buscas:',
+                              'These are the arrangements that match your search:');
+                addBotMessage(intro);
+                addProductCarousel(prods, false);
             }, 700);
         }
 
@@ -315,17 +414,98 @@ const Chat = (() => {
             showTyping(() => {
                 if (n === 0) {
                     addBotMessage(T.carritoVacio());
-                    showQuickReplies([T.qrArreglos()]);
                 } else {
+                    const verBtn = Cart.disponible()
+                        ? `<button onclick="Cart.open()" class="mt-2 w-full bg-gold hover:bg-gold-light text-forest font-bold text-xs py-2 rounded-lg transition cursor-pointer">` +
+                          `<i class="fa-solid fa-cart-shopping mr-1"></i> ${T.verCarrito()}</button>`
+                        : '';
                     addBotMessage(
                         I18n.te(`Llevas <strong>${n}</strong> artículo${n > 1 ? 's' : ''} por un total de `,
                             `You have <strong>${n}</strong> item${n > 1 ? 's' : ''} totaling `) +
                         `<strong class="text-terra">${Data.formatPrecio(Cart.totalCOP())}</strong>.` +
-                        `<button onclick="Cart.open()" class="mt-2 w-full bg-gold hover:bg-gold-light text-forest font-bold text-xs py-2 rounded-lg transition cursor-pointer">` +
-                        `<i class="fa-solid fa-cart-shopping mr-1"></i> ${T.verCarrito()}</button>`
+                        verBtn
                     );
                 }
             }, 700);
+        }
+
+        // ---- Iniciar sesión desde el chat ----
+        function respondLogin() {
+            if (Auth.session()) {
+                addBotMessage(T.sesionActiva(Auth.session().nombre));
+                return;
+            }
+            showTyping(() => {
+                addBotMessage(T.loginIntro());
+                addLoginForm();
+            }, 500);
+        }
+
+        function addLoginForm() {
+            const container = document.getElementById('chatMessages');
+            const wrapper = document.createElement('div');
+            wrapper.className = 'flex items-end gap-2 max-w-[95%] chat-login';
+            wrapper.innerHTML = `
+                ${botAvatar()}
+                <div class="chat-bubble-bot p-3 w-full space-y-2">
+                    <input id="chatLoginEmail" type="email" autocomplete="username" placeholder="${T.loginEmail()}" class="w-full text-sm border border-bord rounded-lg px-3 py-2 focus:outline-none focus:border-leaf">
+                    <input id="chatLoginPass" type="password" autocomplete="current-password" placeholder="${T.loginPass()}" class="w-full text-sm border border-bord rounded-lg px-3 py-2 focus:outline-none focus:border-leaf">
+                    <button type="button" onclick="ChatLoginSubmit()" class="w-full bg-forest hover:bg-forest-light text-white font-bold text-xs py-2 rounded-lg transition cursor-pointer">
+                        <i class="fa-solid fa-right-to-bracket mr-1"></i>${T.loginBtn()}
+                    </button>
+                </div>`;
+            container.appendChild(wrapper);
+            container.scrollTop = container.scrollHeight;
+            document.getElementById('chatLoginEmail')?.focus();
+        }
+
+        window.ChatLoginSubmit = async function () {
+            const email = (document.getElementById('chatLoginEmail')?.value || '').trim();
+            const pass  = (document.getElementById('chatLoginPass')?.value || '');
+            if (!email || !pass) { addBotMessage(T.loginCampos()); return; }
+            try {
+                const r = await Auth.login(email, pass);
+                document.querySelector('.chat-login')?.remove();
+                if (!r.ok) {
+                    addBotMessage(I18n.te('No pudimos iniciar sesión: ', 'We couldn\'t log you in: ') + (r.msg || ''));
+                    return;
+                }
+                Auth.renderNavAuth();
+                addBotMessage(T.loginOk(r.user.nombre));
+            } catch (e) {
+                addBotMessage(T.loginError());
+            }
+        };
+
+        // ---- Agregar al carrito desde el chat (requiere sesión) ----
+        window.ChatAddToCart = function (id) {
+            if (!Auth.session()) {
+                showTyping(() => {
+                    addBotMessage(T.agregarSesion());
+                    addLoginForm();
+                }, 400);
+                return;
+            }
+            Cart.add(id);
+        };
+
+        // ---- Finalizar pedido desde el chat (compra lo que hay en el carrito) ----
+        function respondCheckout() {
+            if (Cart.count() === 0) {
+                addBotMessage(T.pedidoSinCarrito());
+                return;
+            }
+            if (!Auth.session()) {
+                showTyping(() => {
+                    addBotMessage(T.pedidoSesion());
+                    addLoginForm();
+                }, 500);
+                return;
+            }
+            showTyping(() => {
+                addBotMessage(T.pedidoProcesando(Cart.count()));
+                setTimeout(() => Cart.checkout(), 400);
+            }, 600);
         }
 
         // Fila de producto reutilizable (catálogo completo y ocasiones)
@@ -337,12 +517,12 @@ const Chat = (() => {
                         <p class="text-[11px] font-bold text-charcoal leading-tight truncate">${Data.nombre(p)}</p>
                         <p class="text-[11px] font-bold text-terra">${Data.formatPrecio(p.precio)}</p>
                     </div>
-                    <button onclick="Cart.add(${p.id})" class="bg-leaf hover:bg-leaf-light text-white text-[10px] font-bold px-2.5 py-1.5 rounded-md transition flex-shrink-0 cursor-pointer">${T.agregar()}</button>
+                    <button onclick="ChatAddToCart(${p.id})" class="bg-leaf hover:bg-leaf-light text-white text-[10px] font-bold px-2.5 py-1.5 rounded-md transition flex-shrink-0 cursor-pointer">${T.agregar()}</button>
                 </div>`;
         }
 
         // Carrusel horizontal de arreglos dentro del chat (con "Ver más" si hay más)
-        function addProductCarousel(prods) {
+        function addProductCarousel(prods, mostrarVerMas = true) {
             const container = document.getElementById('chatMessages');
             const wrapper = document.createElement('div');
             wrapper.className = 'flex items-end gap-2 max-w-[95%]';
@@ -350,7 +530,7 @@ const Chat = (() => {
                 ${botAvatar()}
                 <div class="chat-bubble-bot p-2 w-full">
                     <div class="chat-carousel">${prods.map(carouselCard).join('')}</div>
-                    ${totalPaginas() > 1
+                    ${(mostrarVerMas && totalPaginas() > 1)
                         ? `<div class="flex gap-2 mt-2">
                              <button class="chat-more-btn" onclick="ShowMoreArrangements()">${T.verMas()}</button>
                              <button class="chat-more-btn" onclick="ChatAsk('${T.qrArreglos()}')">${T.qrArreglos()}</button>
@@ -369,7 +549,7 @@ const Chat = (() => {
                     <div class="p-2 flex flex-col gap-1 flex-1">
                         <p class="text-[11px] font-bold text-charcoal leading-tight truncate">${Data.nombre(p)}</p>
                         <p class="text-[11px] font-bold text-terra">${Data.formatPrecio(p.precio)}</p>
-                        <button onclick="Cart.add(${p.id})" class="mt-auto w-full bg-leaf hover:bg-leaf-light text-white text-[10px] font-bold py-1.5 rounded-md transition cursor-pointer">
+                        <button onclick="ChatAddToCart(${p.id})" class="mt-auto w-full bg-leaf hover:bg-leaf-light text-white text-[10px] font-bold py-1.5 rounded-md transition cursor-pointer">
                             <i class="fa-solid fa-cart-plus mr-1"></i>${T.agregar()}</button>
                     </div>
                 </div>`;
@@ -426,7 +606,6 @@ const Chat = (() => {
                 addBotMessage(text ? T.graciasSugerencia() : T.despedida());
                 setTimeout(() => {
                     addBotMessage(T.hastaPronto());
-                    showQuickReplies([T.qrNueva(), T.qrArreglos()]);
                     chatState.phase = 'conversation';
                     chatState.messageCount = 0;
                 }, 800);
@@ -488,26 +667,6 @@ const Chat = (() => {
             wrapper.remove();
             callback();
         }, delay);
-    }
-
-    function showQuickReplies(options) {
-        removeQuickReplies();
-        const area = document.getElementById('chatInputArea');
-        const div = document.createElement('div');
-        div.id = 'quickReplies';
-        div.className = 'flex flex-wrap gap-2 mt-3';
-        options.forEach(opt => {
-            const btn = document.createElement('button');
-            btn.className = 'text-xs border border-leaf/30 text-leaf bg-leaf/5 px-3 py-1.5 rounded-full hover:bg-leaf hover:text-white transition cursor-pointer';
-            btn.textContent = opt;
-            btn.addEventListener('click', () => ask(opt));
-            div.appendChild(btn);
-        });
-        area.appendChild(div);
-    }
-
-    function removeQuickReplies() {
-        document.getElementById('quickReplies')?.remove();
     }
 
     function showRatingUI() {

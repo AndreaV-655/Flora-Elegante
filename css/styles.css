@@ -144,6 +144,14 @@ body { font-family: 'Lato', sans-serif; background: var(--bg); color: #2d2d2d; o
 }
 .chat-more-btn:hover { background: #faf5ef; border-color: #c9a96e; color: #8a5a17; }
 
+/* El carrito solo se muestra en la vista de cliente (oculto en la página de inicio) */
+body[data-page="inicio"] #cartBtn,
+body[data-page="inicio"] #cartBtnMv,
+body[data-page="inicio"] #cartOverlay,
+body[data-page="inicio"] #cartDrawer {
+    display: none !important;
+}
+
 @media (prefers-reduced-motion: reduce) {
     .petal, .reveal, .product-card, .chat-widget, .typing-dot, .chat-pulse, .scroll-indicator { animation: none !important; transition: none !important; }
 }

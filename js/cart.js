@@ -33,6 +33,10 @@ const Cart = (() => {
 // unidades de una vez (lo usa el chatbot cuando el cliente pide
 // "agrégame dos"). Nunca supera el inventario disponible.
 function add(id, cant = 1) {
+        if (!Auth.session()) {
+            showToast(I18n.te('Inicia sesión para agregar productos al carrito.', 'Log in to add products to your cart.'), 'info');
+            return 0;
+        }
         const p = Data.productos.find(p => p.id === id);
         if (!p) return 0;
         const items = read();
@@ -141,8 +145,18 @@ function add(id, cant = 1) {
         if (totalEl) totalEl.textContent = Data.formatPrecio(totalCOP());
     }
 
+    // ¿El carrito está disponible en esta vista? (en la página de inicio está oculto)
+    function disponible() {
+        const d = document.getElementById('cartDrawer');
+        return !!d && getComputedStyle(d).display !== 'none';
+    }
+
     function openDrawer() {
-        document.getElementById('cartDrawer')?.classList.remove('translate-x-full');
+        const drawer = document.getElementById('cartDrawer');
+        // El carrito solo está disponible en la vista de cliente:
+        // en la página de inicio está oculto, así que no se abre ni bloquea el scroll.
+        if (!drawer || getComputedStyle(drawer).display === 'none') return;
+        drawer.classList.remove('translate-x-full');
         const ov = document.getElementById('cartOverlay');
         ov?.classList.remove('opacity-0', 'pointer-events-none');
         document.body.style.overflow = 'hidden';
@@ -270,6 +284,6 @@ function add(id, cant = 1) {
         render();
     }
 
-    return { add, setQty, remove, clear, count, totalCOP, items: read, render, init, open: openDrawer, close: closeDrawer };
+    return { add, setQty, remove, clear, count, totalCOP, items: read, render, init, open: openDrawer, close: closeDrawer, checkout, disponible };
 })();
 window.Cart = Cart;

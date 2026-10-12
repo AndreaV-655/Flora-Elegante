@@ -209,6 +209,14 @@ const API = (() => {
         }, 'POST');
     }
 
+    // ---- Asistente del chatbot (Gemini vía backend) ----
+    // Si el backend no tiene clave configurada lanza un error y el
+    // chatbot continúa con su lógica local por reglas.
+    async function chatIA(mensajes, contexto) {
+        const r = await request('chat', 'message', { mensajes, contexto }, 'POST');
+        return r.respuesta;
+    }
+
     return {
         BASE_URL,
         cargarCatalogo,
@@ -234,5 +242,6 @@ const API = (() => {
         getClientesAdmin,
         getInteracciones,
         saveInteraccion,
+        chatIA,
     };
 })();

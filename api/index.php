@@ -44,6 +44,7 @@ $rutas = [
     'dashboard'    => 'dashboard.php',
     'clientes'     => 'clientes.php',
     'interactions' => 'interactions.php',
+    'chat'         => 'chat.php',
 ];
 
 if (!isset($rutas[$resource])) {

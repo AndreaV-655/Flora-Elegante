@@ -39,6 +39,7 @@ flora-elegante/
 │   ├── clientes.php        → CRM de clientes (datos sensibles ocultos)
 │   ├── interactions.php    → Interacciones del chatbot
 │   ├── intentos_login.php  → Bitácora de intentos de inicio de sesión
+│   ├── chat.php            → Asistente del chatbot (Google Gemini; opcional)
 │   └── recibo.php          → Recibo con código único
 ├── img/                    → Imágenes locales (licencia libre, Unsplash/Openverse)
 ├── sql/
@@ -46,12 +47,21 @@ flora-elegante/
 └── README.md
 ```
 
-## Chatbot y recibos
+## Chatbot (con IA opcional)
 
-El chatbot funciona **100% en el navegador** con su lógica local por reglas
-(`js/chatbot.js`): entiende texto con o sin tildes, reconoce productos por nombre
-(ES/EN), consulta el carrito, sugiere arreglos por ocasión y guía el flujo de
-calificación y sugerencia. No depende de servicios externos.
+El chatbot (`js/chatbot.js`) mantiene su lógica local por reglas: entiende texto
+con o sin tildes, reconoce productos por nombre (ES/EN), muestra el catálogo por
+páginas ("Ver más arreglos" muestra otros arreglos), consulta el carrito, permite
+**iniciar sesión** y **finalizar el pedido** con los productos del carrito, y guía
+el flujo de calificación y sugerencia.
+
+Para que responda de forma más fluida se conecta a Google Gemini: define
+`GEMINI_API_KEY` y `GEMINI_MODEL` (por defecto `gemini-3.5-flash`) en
+`api/secretos.php`, un archivo **local que no se sube a git** (ver `.gitignore`).
+La IA resuelve los mensajes que no cubre la lógica local y la clave vive solo en
+el servidor. Sin clave, el chatbot funciona igual.
+
+## Recibos
 
 Cada compra genera un recibo con **código único** (`FE-AAAAMMDD-XXXX`). El
 servidor crea el código y lo guarda en el pedido; el cliente lo ve en pantalla
