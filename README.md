@@ -64,8 +64,8 @@ el servidor. Sin clave, el chatbot funciona igual.
 ## Recibos
 
 Cada compra genera un recibo con **código único** (`FE-AAAAMMDD-XXXX`). El
-servidor crea el código y lo guarda en el pedido; el cliente lo ve en pantalla
-al finalizar la compra.
+servidor crea el código y lo guarda en el pedido; el administrador lo ve en el
+panel de pedidos (`admin.html`).
 
 ## Base de datos
 
