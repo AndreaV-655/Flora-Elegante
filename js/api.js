@@ -156,9 +156,19 @@ const API = (() => {
     }
 
     // Crea el pedido en la BD (el servidor valida inventario y lo actualiza)
+    // y devuelve el recibo con su código único.
     async function savePedido(pedido) {
-        const r = await request('orders', 'create', { items: pedido.items }, 'POST');
-        return { id: r.pedido.id, total: r.pedido.total, estado: r.pedido.estado };
+        const r = await request('orders', 'create', {
+            items: pedido.items,
+            lang: (window.I18n ? I18n.lang() : 'es'),
+        }, 'POST');
+        return {
+            id: r.pedido.id,
+            total: r.pedido.total,
+            estado: r.pedido.estado,
+            codigo: r.pedido.codigo || '',
+            recibo: r.recibo || null,
+        };
     }
 
     async function updateEstadoPedido(id, estado) {
@@ -179,7 +189,7 @@ const API = (() => {
     }
 
     async function getClientesAdmin() {
-        return this.getClientes();
+        return getClientes();
     }
 
     // ---- Interacciones (chatbot) ----

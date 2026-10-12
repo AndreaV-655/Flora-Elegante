@@ -29,7 +29,11 @@ CREATE TABLE IF NOT EXISTS usuario (
     CONSTRAINT fk_usuario_rol FOREIGN KEY (rol_id) REFERENCES rol(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE INDEX idx_usuario_rol ON usuario (rol_id);
+-- Índices idempotentes (no fallan si ya existen)
+SET @sql := (SELECT IF(COUNT(*) = 0, 'CREATE INDEX idx_usuario_rol ON usuario (rol_id)', 'DO 0')
+             FROM information_schema.STATISTICS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'usuario' AND INDEX_NAME = 'idx_usuario_rol');
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
 
 -- ============================================================
 -- PERFIL DEL CLIENTE (datos clasificados)
@@ -77,34 +81,62 @@ CREATE TABLE IF NOT EXISTS producto (
     precio       DECIMAL(10,2) NOT NULL CHECK (precio >= 0),
     imagen_url   VARCHAR(300) NULL,
     stock        INT NOT NULL DEFAULT 0 CHECK (stock >= 0),   -- INVENTARIO
-    estado       VARCHAR(20) NOT NULL DEFAULT 'activo',       -- 'activo' | 'inactivo'
+estado       VARCHAR(20) NOT NULL DEFAULT 'activo',       -- 'activo' | 'inactivo'
+    UNIQUE KEY uq_producto_nombre (nombre),
     CONSTRAINT fk_producto_categoria FOREIGN KEY (categoria_id) REFERENCES categoria(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE INDEX idx_producto_categoria ON producto (categoria_id);
+-- Índices idempotentes (no fallan si ya existen)
+SET @sql := (SELECT IF(COUNT(*) = 0, 'CREATE INDEX idx_producto_categoria ON producto (categoria_id)', 'DO 0')
+             FROM information_schema.STATISTICS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'producto' AND INDEX_NAME = 'idx_producto_categoria');
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
+
+-- Limpieza + índice único: sin esto, reimportar el catálogo lo duplicaba.
+DELETE p2 FROM producto p1 JOIN producto p2 ON p2.nombre = p1.nombre WHERE p2.id > p1.id;
+
+SET @sql := (SELECT IF(COUNT(*) = 0, 'CREATE UNIQUE INDEX uq_producto_nombre ON producto (nombre)', 'DO 0')
+             FROM information_schema.STATISTICS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'producto' AND INDEX_NAME = 'uq_producto_nombre');
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
 
 INSERT INTO producto (categoria_id, nombre, nombre_en, descripcion, descripcion_en, precio, imagen_url, stock, estado) VALUES
     (1, 'Ramo de Rosas Rojas', 'Red Roses Bouquet', '12 rosas rojas premium con follaje verde y lazo de satén.', '12 premium red roses with green foliage and a satin ribbon.', 85000.00, 'img/rosas-rojas.jpg', 25, 'activo'),
     (2, 'Arreglo de Lirios Blancos', 'White Lilies Arrangement', 'Elegante composición de lirios blancos con eucalipto y baby breath.', 'Elegant arrangement of white lilies with eucalyptus and baby’s breath.', 98000.00, 'img/lirios-blancos.jpg', 3, 'activo'),
-    (3, 'Canasta de Girasoles', 'Sunflower Basket', 'Vibrante canasta de girasoles frescos con flores de campo.', 'Vibrant basket of fresh sunflowers with wildflowers.', 72000.00, 'img/girasoles.jpg', 20, 'activo'),
+    (3, 'Canasta de Girasoles', 'Sunflower Basket', 'Vibrant canasta de girasoles frescos con flores de campo.', 'Vibrant basket of fresh sunflowers with wildflowers.', 72000.00, 'img/girasoles.jpg', 20, 'activo'),
     (4, 'Tulipanes Mixtos', 'Mixed Tulips', '20 tulipanes en tonos pastel: rosa, amarillo, lila y naranja.', '20 tulips in pastel tones: pink, yellow, lilac and orange.', 92000.00, 'img/tulipanes.jpg', 22, 'activo'),
     (6, 'Centro de Mesa Tropical', 'Tropical Centerpiece', 'Composición exótica con anturios, heliconias y hojas de palma.', 'Exotic composition with anthuriums, heliconias and palm leaves.', 118000.00, 'img/tropical.jpg', 10, 'activo'),
     (5, 'Caja de Orquídeas', 'Orchid Box', 'Tres orquídeas phalaenopsis en caja de madera premium con musgo.', 'Three phalaenopsis orchids in a premium wooden box with moss.', 145000.00, 'img/orquideas.jpg', 8, 'activo')
-ON DUPLICATE KEY UPDATE nombre = VALUES(nombre);
+ON DUPLICATE KEY UPDATE precio = VALUES(precio);
 
 -- ============================================================
 -- PEDIDOS
+-- ------------------------------------------------------------
+-- codigo : recibo único del pedido (FE-AAAAMMDD-XXXX)
 -- ============================================================
 CREATE TABLE IF NOT EXISTS pedido (
-    id          BIGINT AUTO_INCREMENT PRIMARY KEY,
-    cliente_id  BIGINT NOT NULL,
-    fecha       DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    estado      VARCHAR(20) NOT NULL DEFAULT 'Confirmado',
-    total       DECIMAL(12,2) NOT NULL DEFAULT 0,
+    id             BIGINT AUTO_INCREMENT PRIMARY KEY,
+    cliente_id     BIGINT NOT NULL,
+    fecha          DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    estado         VARCHAR(20) NOT NULL DEFAULT 'Confirmado',
+    total          DECIMAL(12,2) NOT NULL DEFAULT 0,
+    codigo         VARCHAR(40) NULL UNIQUE,          -- recibo único del pedido
     CONSTRAINT fk_pedido_cliente FOREIGN KEY (cliente_id) REFERENCES usuario(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE INDEX idx_pedido_cliente ON pedido (cliente_id);
+-- Índices idempotentes (no fallan si ya existen)
+SET @sql := (SELECT IF(COUNT(*) = 0, 'CREATE INDEX idx_pedido_cliente ON pedido (cliente_id)', 'DO 0')
+             FROM information_schema.STATISTICS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'pedido' AND INDEX_NAME = 'idx_pedido_cliente');
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
+
+-- Migración idempotente: si la tabla `pedido` ya existía sin las
+-- columnas del recibo, se agregan. Se puede ejecutar el script las
+-- veces que sea sin romper nada.
+SET @sql := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE pedido ADD COLUMN codigo VARCHAR(40) NULL UNIQUE AFTER total', 'DO 0')
+             FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'pedido' AND COLUMN_NAME = 'codigo');
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
 
 CREATE TABLE IF NOT EXISTS pedido_detalle (
     id              BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -115,6 +147,32 @@ CREATE TABLE IF NOT EXISTS pedido_detalle (
     CONSTRAINT fk_detalle_pedido FOREIGN KEY (pedido_id) REFERENCES pedido(id) ON DELETE CASCADE,
     CONSTRAINT fk_detalle_producto FOREIGN KEY (producto_id) REFERENCES producto(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- ============================================================
+-- INTENTOS DE INICIO DE SESIÓN (seguridad)
+-- ------------------------------------------------------------
+-- Cada intento de login (éxito o fallo) queda registrado como
+-- bitácora de seguridad.
+-- ============================================================
+CREATE TABLE IF NOT EXISTS intento_login (
+    id         BIGINT AUTO_INCREMENT PRIMARY KEY,
+    email      VARCHAR(150) NOT NULL,
+    ip         VARCHAR(45) NOT NULL DEFAULT '',
+    exito      TINYINT NOT NULL DEFAULT 0,
+    user_agent VARCHAR(255) NULL,
+    fecha      DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
+
+-- Índices idempotentes (no fallan si ya existen)
+SET @sql := (SELECT IF(COUNT(*) = 0, 'CREATE INDEX idx_intento_email ON intento_login (email, fecha)', 'DO 0')
+             FROM information_schema.STATISTICS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'intento_login' AND INDEX_NAME = 'idx_intento_email');
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
+
+SET @sql := (SELECT IF(COUNT(*) = 0, 'CREATE INDEX idx_intento_ip ON intento_login (ip, fecha)', 'DO 0')
+             FROM information_schema.STATISTICS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'intento_login' AND INDEX_NAME = 'idx_intento_ip');
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
 
 -- ============================================================
 -- INTERACCIONES (chatbot) · base del reporte mensual
@@ -129,7 +187,11 @@ CREATE TABLE IF NOT EXISTS interaccion (
     CONSTRAINT fk_interaccion_usuario FOREIGN KEY (usuario_id) REFERENCES usuario(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
-CREATE INDEX idx_interaccion_fecha ON interaccion (fecha);
+-- Índices idempotentes (no fallan si ya existen)
+SET @sql := (SELECT IF(COUNT(*) = 0, 'CREATE INDEX idx_interaccion_fecha ON interaccion (fecha)', 'DO 0')
+             FROM information_schema.STATISTICS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'interaccion' AND INDEX_NAME = 'idx_interaccion_fecha');
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
 
 -- ============================================================
 -- DATOS DEMO

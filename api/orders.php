@@ -3,11 +3,13 @@
 // PEDIDOS
 // - POST create      → crear pedido (cliente): valida inventario y
 //                      actualiza stock del producto para el que se compró.
+//                      Luego genera el recibo con su código único.
 // - GET  list        → historial del cliente autenticado.
 // - GET  adminList   → todos los pedidos (admin) con detalle y cliente.
 // - POST updateEstado→ cambiar estado (admin).
 // ============================================================
 require_once __DIR__ . '/helpers.php';
+require_once __DIR__ . '/recibo.php';
 
 $action = $_GET['action'] ?? ($_POST['action'] ?? 'list');
 $db     = db();
@@ -41,7 +43,7 @@ switch ($action) {
                 $qty  = (int)($it['qty'] ?? 0);
                 if ($pid <= 0 || $qty <= 0) json_error('Producto o cantidad no válido.', 400);
 
-                $st = $db->prepare("SELECT id, precio, stock FROM producto WHERE id = ? FOR UPDATE");
+                $st = $db->prepare("SELECT id, nombre, nombre_en, precio, stock FROM producto WHERE id = ? FOR UPDATE");
                 $st->execute([$pid]);
                 $p = $st->fetch();
                 if (!$p) json_error('Producto no encontrado.', 400);
@@ -67,7 +69,33 @@ switch ($action) {
             }
 
             $db->commit();
-            json_out(['ok' => true, 'pedido' => ['id' => $pedidoId, 'total' => $total, 'estado' => 'Confirmado']]);
+
+            // ----- Recibo con código único -----
+            // Se hace fuera de la transacción: el pedido ya está guardado.
+            $lineas = [];
+            foreach ($productos as $it) {
+                $lineas[] = [
+                    'productoId'     => (int)$it['p']['id'],
+                    'nombre'         => (string)$it['p']['nombre'],
+                    'nombreEn'       => (string)$it['p']['nombre_en'],
+                    'cantidad'       => (int)$it['qty'],
+                    'precioUnitario' => (float)$it['p']['precio'],
+                    'subtotal'       => (float)$it['p']['precio'] * (int)$it['qty'],
+                ];
+            }
+
+            $recibo = recibo_generar($pedidoId, $lineas);
+
+            json_out([
+                'ok' => true,
+                'pedido' => [
+                    'id'     => $pedidoId,
+                    'total'  => $total,
+                    'estado' => 'Confirmado',
+                    'codigo' => $recibo['codigo'],
+                ],
+                'recibo' => $recibo,
+            ]);
         } catch (Throwable $e) {
             if ($db->inTransaction()) $db->rollBack();
             throw $e;
@@ -76,7 +104,8 @@ switch ($action) {
 
     case 'list': {
         $u = require_auth();
-        $st = $db->prepare("SELECT id, fecha, estado, total FROM pedido WHERE cliente_id = ? ORDER BY id DESC");
+        $st = $db->prepare("SELECT id, fecha, estado, total, codigo
+                            FROM pedido WHERE cliente_id = ? ORDER BY id DESC");
         $st->execute([$u['id']]);
         $pedidos = [];
         foreach ($st->fetchAll() as $ped) {
@@ -90,6 +119,7 @@ switch ($action) {
     case 'adminList': {
         require_auth(true);
         $st = $db->query("SELECT pe.id, pe.cliente_id, pe.fecha, pe.estado, pe.total,
+                                 pe.codigo,
                                  u.nombre, u.email
                           FROM pedido pe
                           JOIN usuario u ON u.id = pe.cliente_id

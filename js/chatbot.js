@@ -1,5 +1,7 @@
 // ===================================================================
 // CHATBOT DE ATENCIÓN AL CLIENTE ("Flora") · Bilingüe ES/EN
+// -------------------------------------------------------------------
+// Funciona 100% en el navegador con una lógica local por reglas:
 // - Entiende texto con o sin tildes (normalización)
 // - Reconoce productos por nombre en español e inglés
 // - Consulta de carrito con total según moneda activa (COP/USD)

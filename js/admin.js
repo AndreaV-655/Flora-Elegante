@@ -10,6 +10,14 @@ const AdminPanel = (() => {
 
     let categorias = [];
 
+    // Los datos de pedidos vienen del backend (códigos y nombres):
+    // se escapan antes de meterlos en el HTML del panel.
+    function esc(s) {
+        return String(s ?? '').replace(/[&<>"']/g, c => ({
+            '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;',
+        }[c]));
+    }
+
     const ESTADOS = ['Confirmado', 'En camino', 'Entregado', 'Cancelado'];
 
     function statusColor(e) {
@@ -245,6 +253,7 @@ const AdminPanel = (() => {
                 <thead>
                     <tr class="bg-cream-dark/60 text-left">
                         <th class="px-4 py-3 font-bold text-charcoal text-xs uppercase">${I18n.te('Pedido', 'Order')}</th>
+                        <th class="px-4 py-3 font-bold text-charcoal text-xs uppercase">${I18n.te('Recibo', 'Receipt')}</th>
                         <th class="px-4 py-3 font-bold text-charcoal text-xs uppercase">${I18n.te('Cliente', 'Customer')}</th>
                         <th class="px-4 py-3 font-bold text-charcoal text-xs uppercase">${I18n.te('Fecha', 'Date')}</th>
                         <th class="px-4 py-3 font-bold text-charcoal text-xs uppercase">${I18n.te('Total', 'Total')}</th>
@@ -256,6 +265,11 @@ const AdminPanel = (() => {
                     ${pedidos.map(p => `
                     <tr class="border-t border-bord hover:bg-cream/50">
                         <td class="px-4 py-3 font-bold text-charcoal">#${p.id}</td>
+<td class="px-4 py-3">
+                    ${p.codigo
+                        ? `<span class="font-mono font-bold text-xs text-terra">${esc(p.codigo)}</span>`
+                        : '<span class="text-xs text-muted">—</span>'}
+                </td>
                         <td class="px-4 py-3">
                             <p class="font-bold text-charcoal">${p.nombre}</p>
                             <p class="text-xs text-muted">${p.email}</p>
@@ -266,7 +280,7 @@ const AdminPanel = (() => {
                             <span class="text-[10px] px-2 py-1 rounded-full font-bold ${statusColor(p.estado)}">${I18n.te(p.estado, p.estado)}</span>
                         </td>
                         <td class="px-4 py-3">
-                            <div class="flex justify-end gap-2">
+                            <div class="flex justify-end items-center gap-2">
                                 <button onclick="AdminPanel.verDetalle(${p.id})" class="text-leaf hover:opacity-70" title="${I18n.te('Ver detalle', 'View details')}"><i class="fa-solid fa-eye"></i></button>
                                 <select onchange="AdminPanel.cambiarEstado(${p.id}, this.value)" class="text-xs border border-bord rounded px-2 py-1">
                                     ${ESTADOS.map(es => `<option value="${es}" ${es === p.estado ? 'selected' : ''}>${I18n.te(es, es)}</option>`).join('')}
@@ -290,6 +304,11 @@ const AdminPanel = (() => {
                 ${I18n.te('Fecha', 'Date')}: <strong class="text-charcoal">${String(p.fecha).slice(0, 16).replace('T', ' ')}</strong><br>
                 ${I18n.te('Estado', 'Status')}: <span class="font-bold ${statusColor(p.estado).split(' ')[1]}">${I18n.te(p.estado, p.estado)}</span>
             </div>
+            ${p.codigo ? `
+            <div class="mb-4 p-3 bg-cream/60 border border-bord rounded-lg text-center">
+                <p class="text-[10px] uppercase tracking-wider text-muted font-bold">${I18n.te('Código del recibo', 'Receipt code')}</p>
+                <p class="font-mono font-bold text-xl text-terra">${p.codigo}</p>
+            </div>` : ''}
             <div class="border-t border-bord pt-3">
                 ${(p.items || []).map(it => `
                     <div class="flex justify-between py-1 text-sm">
@@ -345,6 +364,6 @@ const AdminPanel = (() => {
         document.addEventListener('fe:catalogo', () => { cargarProductos(); cargarDashboard(); });
     }
 
-    return { init, editarProducto, eliminarProducto, cambiarEstado, verDetalle };
+    return { init, editarProducto, eliminarProducto, cambiarEstado, verDetalle, cerrarFormulario, guardarProducto, cerrarDetalle };
 })();
 window.AdminPanel = AdminPanel;

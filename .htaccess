@@ -1,0 +1,18 @@
+# ============================================================
+# DESARROLLO · evita que el navegador sirva HTML/JS/CSS viejos
+# ------------------------------------------------------------
+# Sin esto, Apache responde los estáticos sin Cache-Control y el
+# navegador los guarda por heurística: al editar auth.js, admin.js,
+# etc. se seguía viendo la versión anterior.
+#
+# En un servidor público se puede quitar (o cambiar por caché con
+# expiración) para aprovechar el rendimiento.
+# ============================================================
+<IfModule mod_headers.c>
+    <FilesMatch "\.(html|js|css)$">
+        Header set Cache-Control "no-store, no-cache, must-revalidate, max-age=0"
+        Header set Pragma "no-cache"
+        Header unset ETag
+    </FilesMatch>
+</IfModule>
+FileETag None

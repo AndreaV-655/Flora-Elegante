@@ -4,6 +4,7 @@
 // ============================================================
 require_once __DIR__ . '/helpers.php';
 require_once __DIR__ . '/bootstrap.php';
+require_once __DIR__ . '/intentos_login.php';
 
 // Garantiza (solo crea lo que falte) roles, admin y cliente demo con sus
 // pedidos de ejemplo. Sin esto, con una BD recién importada no habría
@@ -26,8 +27,12 @@ switch ($action) {
         $st->execute([$email]);
         $u = $st->fetch();
         if (!$u || !password_verify($pass, $u['password_hash'])) {
+            // Fallo de login: queda en la bitácora de intentos.
+            login_registrar($email, false);
             json_error('Correo o contraseña incorrectos.', 401);
         }
+
+        login_registrar($email, true);
 
         $_SESSION['usuario'] = [
             'id'     => (int)$u['id'],

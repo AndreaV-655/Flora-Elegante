@@ -283,13 +283,48 @@
                 <span id="cartTotal" class="font-display font-bold text-xl text-forest">$0 COP</span>
             </div>
             <p class="text-xs text-muted mb-4"><i class="fa-solid fa-truck-fast text-leaf mr-1"></i>Entrega gratuita en la zona metropolitana.</p>
-            <button id="checkoutBtn" class="btn-primary w-full">
+<button id="checkoutBtn" class="btn-primary w-full">
                 <i class="fa-solid fa-bag-shopping mr-2"></i>Finalizar compra
             </button>
         </div>
+    </aside>
 
-    <!-- Toasts + menú móvil -->
-    <div id="toastContainer" class="fixed bottom-6 right-6 z-[90] space-y-2 pointer-events-none"></div>
+    <!-- ===== CHATBOT ===== -->
+    <button id="chatToggle" class="fixed bottom-6 right-6 z-50 w-16 h-16 rounded-full bg-terra text-white shadow-lg flex items-center justify-center text-2xl chat-pulse hover:scale-110 transition-transform cursor-pointer" aria-label="Abrir chat de atención">
+        <i class="fa-solid fa-comments"></i>
+    </button>
+
+    <div id="chatWidget" class="chat-widget closed fixed bottom-24 right-6 z-50 w-[380px] max-w-[calc(100vw-3rem)] bg-white rounded-2xl shadow-2xl shadow-forest/20 overflow-hidden flex flex-col" style="height: 560px;">
+        <!-- Cabecera del chat -->
+        <div class="bg-forest text-white px-5 py-4 flex items-center justify-between flex-shrink-0">
+            <div class="flex items-center gap-3">
+                <div class="w-10 h-10 rounded-full bg-white flex items-center justify-center overflow-hidden border-2 border-gold/50 flex-shrink-0">
+                    <img src="img/logo.svg" alt="Asistente Flora" class="w-8 h-8">
+                </div>
+                <div>
+                    <p class="font-bold text-sm">Asistente Flora</p>
+                    <p class="text-white/50 text-xs flex items-center gap-1"><span class="w-2 h-2 rounded-full bg-green-400 inline-block"></span> En línea</p>
+                </div>
+            </div>
+            <button id="chatClose" class="text-white/60 hover:text-white transition text-lg" aria-label="Cerrar chat">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <!-- Mensajes -->
+        <div id="chatMessages" class="flex-1 overflow-y-auto px-5 py-4 space-y-4 bg-cream/50"></div>
+        <!-- Área de entrada -->
+        <div id="chatInputArea" class="p-4 border-t border-bord bg-white flex-shrink-0">
+            <div class="flex gap-2">
+                <input id="chatInput" type="text" placeholder="Escribe tu mensaje..." class="flex-1 border border-bord rounded-xl px-4 py-3 text-sm focus:outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20 transition" autocomplete="off">
+                <button id="chatSend" class="w-12 h-12 rounded-xl bg-forest text-white flex items-center justify-center hover:bg-forest-light transition flex-shrink-0" aria-label="Enviar mensaje">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Los toasts van arriba a la derecha: abajo queda el botón del chat -->
+    <div id="toastContainer" class="fixed top-6 right-6 z-[100] space-y-3 pointer-events-none"></div>
 
     <script src="js/i18n.js"></script>
     <script src="js/data.js"></script>
@@ -300,6 +335,7 @@
     <script src="js/catalog.js"></script>
     <script src="js/form.js"></script>
     <script src="js/historial.js"></script>
+    <script src="js/chatbot.js"></script>
     <script src="js/main.js"></script>
 </body>
 </html>

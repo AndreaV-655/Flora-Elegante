@@ -60,6 +60,7 @@ document.addEventListener('DOMContentLoaded', async () => {
         Catalog.init();
         Form.init();
         Historial.init();
+        Chat.init();
         return;
     }
 

@@ -37,13 +37,38 @@ flora-elegante/
 │   ├── orders.php          → Pedidos (cliente y admin) + cambios de estado
 │   ├── dashboard.php       → Estadísticas del panel
 │   ├── clientes.php        → CRM de clientes (datos sensibles ocultos)
-│   └── interactions.php    → Interacciones del chatbot
+│   ├── interactions.php    → Interacciones del chatbot
+│   ├── intentos_login.php  → Bitácora de intentos de inicio de sesión
+│   └── recibo.php          → Recibo con código único
 ├── img/                    → Imágenes locales (licencia libre, Unsplash/Openverse)
 ├── sql/
-│   ├── flora_elegante_mysql.sql → Esquema MySQL (importar desde cero en phpMyAdmin)
-│   └── migrar_existente.sql     → Migración no destructiva sobre una BD existente
+│   └── flora_elegante_mysql.sql → Esquema MySQL (importar desde cero en phpMyAdmin)
 └── README.md
 ```
 
+## Chatbot y recibos
 
---http://localhost/flora-elegante/index.html
+El chatbot funciona **100% en el navegador** con su lógica local por reglas
+(`js/chatbot.js`): entiende texto con o sin tildes, reconoce productos por nombre
+(ES/EN), consulta el carrito, sugiere arreglos por ocasión y guía el flujo de
+calificación y sugerencia. No depende de servicios externos.
+
+Cada compra genera un recibo con **código único** (`FE-AAAAMMDD-XXXX`). El
+servidor crea el código y lo guarda en el pedido; el cliente lo ve en pantalla
+al finalizar la compra.
+
+## Base de datos
+
+Importa `sql/flora_elegante_mysql.sql` desde phpMyAdmin. Crea las tablas de
+categorías, productos, usuarios, pedidos, interacciones e intentos de login.
+
+## Zona horaria
+
+La zona horaria vive en `api/config.php` (`TIMEZONE`, por defecto
+`America/Bogota`). Si vendes en otro país, cambia esa constante: la conexión
+calcula sola el desplazamiento para MySQL y así las fechas de los pedidos
+coinciden con las de los recibos.
+
+---
+
+`http://localhost/flora-elegante/index.html`

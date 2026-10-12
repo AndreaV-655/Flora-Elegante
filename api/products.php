@@ -42,6 +42,11 @@ switch ($action) {
         $nombre = trim($d['nombre'] ?? '');
         if (!$nombre) json_error('El nombre es obligatorio.', 400);
 
+        // producto.nombre es único: se avisa antes de que la BD rechace.
+        $st = $db->prepare("SELECT id FROM producto WHERE nombre = ?");
+        $st->execute([$nombre]);
+        if ($st->fetch()) json_error('Ya existe un producto con ese nombre.', 409);
+
         $db->prepare("INSERT INTO producto (categoria_id, nombre, nombre_en, descripcion, descripcion_en, precio, imagen_url, stock, estado)
                       VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)")
            ->execute([
@@ -63,12 +68,18 @@ switch ($action) {
         $d = body();
         $id = (int)($d['id'] ?? 0);
         if (!$id) json_error('ID de producto requerido.', 400);
+        $nombre = trim($d['nombre'] ?? '');
+        if (!$nombre) json_error('El nombre es obligatorio.', 400);
+
+        $st = $db->prepare("SELECT id FROM producto WHERE nombre = ? AND id <> ?");
+        $st->execute([$nombre, $id]);
+        if ($st->fetch()) json_error('Ya existe otro producto con ese nombre.', 409);
 
         $db->prepare("UPDATE producto SET categoria_id = ?, nombre = ?, nombre_en = ?, descripcion = ?,
                        descripcion_en = ?, precio = ?, imagen_url = ?, stock = ?, estado = ? WHERE id = ?")
            ->execute([
                (int)($d['categoria_id'] ?? 1),
-               trim($d['nombre'] ?? ''),
+               $nombre,
                trim($d['nombre_en'] ?? ''),
                $d['descripcion'] ?? '',
                $d['descripcion_en'] ?? '',

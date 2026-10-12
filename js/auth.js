@@ -26,6 +26,17 @@ const Auth = (() => {
         write(SESSION_KEY, { id: u.id, nombre: u.nombre, email: u.email, rol: u.rol, loginAt: new Date().toISOString() });
     }
 
+    // Refresca el nombre/correo de la sesión local tras editar el perfil.
+    function setSessionPerfil(perfil) {
+        const s = session();
+        if (!s) return;
+        write(SESSION_KEY, {
+            ...s,
+            nombre: perfil.nombre || s.nombre,
+            email: perfil.email || s.email,
+        });
+    }
+
     async function login(email, password) {
         try {
             const r = await API.login(email, password);
@@ -166,5 +177,9 @@ const Auth = (() => {
         });
     }
 
-    return { login, register, logout, syncSession, updatePassword, session, isAdmin, requireAdmin, renderNavAuth, initLoginPage, ROLES };
+    return { login, register, logout, cerrarSesionYRedirigir, syncSession, updatePassword, session, isAdmin, requireAdmin, renderNavAuth, initLoginPage, setSessionPerfil, ROLES };
 })();
+
+// Exponer en window: algunos módulos comprueban window.Auth y las
+// declaraciones const no crean propiedades globales por sí solas.
+window.Auth = Auth;
