@@ -111,8 +111,8 @@ El webhook recibe un JSON con:
 - `flor_solicitada` (resumen de los arreglos), `items` (detalle de cada arreglo)
   y `recibo`.
 
-Webhook por defecto:
-`http://localhost:5678/webhook-test/048c3e44-4725-4d25-941e-321bb9020338`.
+La URL del webhook vive en `api/secretos.php` (constante `N8N_WEBHOOK_URL`),
+junto con la clave de Gemini. Ejemplo: `http://localhost:5678/webhook-test/<id>`.
 Para desactivar el envío, deja `N8N_WEBHOOK_URL` vacío (`''`).
 
 ## Base de datos

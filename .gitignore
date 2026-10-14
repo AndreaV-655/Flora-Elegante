@@ -1,0 +1,7 @@
+# Secretos locales (claves de API, contraseñas) — nunca versionar
+api/secretos.php
+
+# Archivos del sistema / temporales
+.DS_Store
+Thumbs.db
+*.log
