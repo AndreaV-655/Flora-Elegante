@@ -167,13 +167,207 @@ function add(id, cant = 1) {
         document.body.style.overflow = '';
     }
 
-    async function checkout() {
-        if (count() === 0) return;
+    // ---------------------------------------------------------------
+    // ENTREGA · horario del negocio y validación de fecha/hora
+    // Lun-Sáb 8:00-20:00 · Dom 9:00-14:00
+    // ---------------------------------------------------------------
+    const HORARIO = {
+        0: [9, 14],                                              // domingo
+        1: [8, 20], 2: [8, 20], 3: [8, 20], 4: [8, 20], 5: [8, 20], // lunes a viernes
+        6: [8, 20],                                              // sábado
+    };
+
+    function hoyISO() {
+        const d = new Date();
+        const mm = String(d.getMonth() + 1).padStart(2, '0');
+        const dd = String(d.getDate()).padStart(2, '0');
+        return `${d.getFullYear()}-${mm}-${dd}`;
+    }
+
+    // Valida fecha (YYYY-MM-DD) y hora (HH:MM) contra el horario del negocio.
+    function validarEntrega(fecha, hora) {
+        if (!fecha || !hora) {
+            return { ok: false, msg: I18n.te('Elige una fecha y una hora de entrega.', 'Choose a delivery date and time.') };
+        }
+        const [y, m, d] = String(fecha).split('-').map(Number);
+        const [hh, mi] = String(hora).split(':').map(Number);
+        const dt = new Date(y, (m || 1) - 1, d, hh, mi || 0, 0, 0);
+        if (isNaN(dt.getTime())) {
+            return { ok: false, msg: I18n.te('La fecha u hora no es válida.', 'The date or time is not valid.') };
+        }
+        const [abre, cierra] = HORARIO[dt.getDay()];
+        if (hh < abre || hh >= cierra) {
+            return { ok: false, msg: I18n.te(
+                `Ese día atendemos de ${abre}:00 a ${cierra}:00.`,
+                `That day we deliver from ${abre}:00 to ${cierra}:00.`) };
+        }
+        if (dt <= new Date()) {
+            return { ok: false, msg: I18n.te('La entrega debe ser en una fecha y hora futuras.', 'Delivery must be at a future date and time.') };
+        }
+        return { ok: true };
+    }
+
+    // Texto legible de la entrega: "lun 12 oct, 10:00"
+    function formatoEntrega(fecha, hora) {
+        const [y, m, d] = String(fecha).split('-').map(Number);
+        const dt = new Date(y, (m || 1) - 1, d);
+        const dias = I18n.te('dom,lun,mar,mié,jue,vie,sáb', 'Sun,Mon,Tue,Wed,Thu,Fri,Sat').split(',');
+        const meses = I18n.te('ene,feb,mar,abr,may,jun,jul,ago,sep,oct,nov,dic', 'Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec').split(',');
+        return `${dias[dt.getDay()]} ${dt.getDate()} ${meses[dt.getMonth()]}, ${hora}`;
+    }
+
+    // Teléfono guardado en el perfil. El checkout lo pide si aún no existe
+    // (por ejemplo, en cuentas creadas desde el chatbot).
+    let _telefonoPerfil = null;
+    async function telefonoPerfil() {
+        if (_telefonoPerfil !== null) return _telefonoPerfil;
+        try {
+            const r = await API.getPerfil();
+            _telefonoPerfil = (r && r.perfil && r.perfil.telefono) ? String(r.perfil.telefono) : '';
+        } catch (e) { _telefonoPerfil = ''; }
+        return _telefonoPerfil;
+    }
+
+    // Nombre legible del tipo de ocasión especial.
+    function etiquetaOcasion(tipo) {
+        return ({
+            cumpleanos: I18n.te('Cumpleaños', 'Birthday'),
+            aniversario: I18n.te('Aniversario', 'Anniversary'),
+            otro: I18n.te('Otra ocasión', 'Other occasion'),
+        })[String(tipo || '').toLowerCase()] || '';
+    }
+
+    // Pide la fecha/hora de entrega y los datos extra del pedido
+    // (teléfono, dedicatoria y ocasión especial) en una ventana modal.
+    // Devuelve un objeto con todo, o null si el cliente cancela.
+    async function pedirEntrega() {
+        const telefonoGuardado = await telefonoPerfil();
+        return new Promise(resolve => {
+            const modal = document.createElement('div');
+            modal.className = 'fixed inset-0 z-[120] flex items-start sm:items-center justify-center p-4 bg-forest/60 backdrop-blur-sm overflow-y-auto';
+            modal.innerHTML = `
+                <div class="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[92vh] overflow-y-auto">
+                    <div class="px-6 py-5 border-b border-bord">
+                        <h3 class="font-display font-bold text-xl text-charcoal">
+                            <i class="fa-solid fa-truck-fast text-leaf mr-2"></i>${I18n.te('Programa tu entrega', 'Schedule your delivery')}
+                        </h3>
+                        <p class="text-xs text-muted mt-1">${I18n.te('Lunes a sábado 8:00-20:00 · Domingo 9:00-14:00', 'Monday to Saturday 8:00-20:00 · Sunday 9:00-14:00')}</p>
+                    </div>
+                    <div class="p-6 space-y-4">
+                        <div class="grid grid-cols-2 gap-3">
+                            <div>
+                                <label class="block text-xs font-bold text-charcoal mb-1">${I18n.te('Fecha de entrega', 'Delivery date')}</label>
+                                <input id="entregaFecha" type="date" min="${hoyISO()}" class="w-full border border-bord rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20">
+                            </div>
+                            <div>
+                                <label class="block text-xs font-bold text-charcoal mb-1">${I18n.te('Hora de entrega', 'Delivery time')}</label>
+                                <input id="entregaHora" type="time" class="w-full border border-bord rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20">
+                            </div>
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-charcoal mb-1">${I18n.te('Teléfono de contacto', 'Contact phone')}</label>
+                            <input id="entregaTelefono" type="tel" value="${telefonoGuardado}" placeholder="+57 300 123 4567" class="w-full border border-bord rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20">
+                        </div>
+                        <div>
+                            <label class="block text-xs font-bold text-charcoal mb-1">${I18n.te('Dedicatoria (opcional)', 'Dedication (optional)')}</label>
+                            <textarea id="entregaDedicatoria" rows="2" maxlength="500" placeholder="${I18n.te('Mensaje para la tarjeta', 'Message for the card')}" class="w-full border border-bord rounded-lg px-3 py-2.5 text-sm resize-none focus:outline-none focus:border-leaf focus:ring-2 focus:ring-leaf/20"></textarea>
+                        </div>
+                        <div class="rounded-lg border border-bord p-3 space-y-3">
+                            <div class="flex items-start gap-2">
+                                <input id="entregaEvento" type="checkbox" class="mt-0.5 w-4 h-4 accent-leaf cursor-pointer">
+                                <label for="entregaEvento" class="text-xs text-charcoal cursor-pointer">${I18n.te('¿Es para una ocasión especial?', 'Is it for a special occasion?')}</label>
+                            </div>
+                            <div id="entregaOcasionBox" class="hidden space-y-3 pl-6">
+                                <div>
+                                    <label class="block text-xs font-bold text-charcoal mb-1">${I18n.te('Tipo de ocasión', 'Occasion type')}</label>
+                                    <select id="entregaOcasion" class="w-full border border-bord rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-leaf">
+                                        <option value="cumpleanos">${I18n.te('Cumpleaños', 'Birthday')}</option>
+                                        <option value="aniversario">${I18n.te('Aniversario', 'Anniversary')}</option>
+                                        <option value="otro">${I18n.te('Otra ocasión', 'Other occasion')}</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label class="block text-xs font-bold text-charcoal mb-1">${I18n.te('Fecha de la ocasión', 'Occasion date')}</label>
+                                    <input id="entregaFechaOcasion" type="date" min="${hoyISO()}" class="w-full border border-bord rounded-lg px-3 py-2.5 text-sm focus:outline-none focus:border-leaf">
+                                </div>
+                            </div>
+                        </div>
+                        <p id="entregaError" class="hidden text-terra text-xs"></p>
+                    </div>
+                    <div class="px-6 pb-6 flex gap-2">
+                        <button id="entregaCancelar" class="flex-1 border border-bord rounded-lg py-2.5 text-sm font-bold text-muted hover:bg-cream transition cursor-pointer">${I18n.te('Cancelar', 'Cancel')}</button>
+                        <button id="entregaConfirmar" class="flex-1 bg-leaf hover:bg-leaf-light text-white rounded-lg py-2.5 text-sm font-bold transition cursor-pointer">${I18n.te('Confirmar', 'Confirm')}</button>
+                    </div>
+                </div>`;
+            document.body.appendChild(modal);
+            document.body.style.overflow = 'hidden';
+
+            const $ = sel => modal.querySelector(sel);
+            const errEl = $('#entregaError');
+            const cerrar = val => { modal.remove(); document.body.style.overflow = ''; resolve(val); };
+            const mostrarError = msg => { errEl.textContent = msg; errEl.classList.remove('hidden'); };
+
+            const eventoChk = $('#entregaEvento');
+            const ocasionBox = $('#entregaOcasionBox');
+            eventoChk.addEventListener('change', () => {
+                ocasionBox.classList.toggle('hidden', !eventoChk.checked);
+                const fechaOc = $('#entregaFechaOcasion');
+                if (eventoChk.checked && !fechaOc.value) fechaOc.value = $('#entregaFecha').value || hoyISO();
+            });
+
+            $('#entregaCancelar').addEventListener('click', () => cerrar(null));
+            modal.addEventListener('click', e => { if (e.target === modal) cerrar(null); });
+            $('#entregaConfirmar').addEventListener('click', () => {
+                const fecha = $('#entregaFecha').value;
+                const hora = $('#entregaHora').value;
+                const v = validarEntrega(fecha, hora);
+                if (!v.ok) { mostrarError(v.msg); return; }
+
+                const telefono = ($('#entregaTelefono').value || '').trim();
+                const digitos = telefono.replace(/\D/g, '');
+                if (!telefono) { mostrarError(I18n.te('Escribe un teléfono de contacto.', 'Enter a contact phone number.')); return; }
+                if (digitos.length < 7 || digitos.length > 15) {
+                    mostrarError(I18n.te('El teléfono debe tener entre 7 y 15 dígitos.', 'The phone must have between 7 and 15 digits.')); return;
+                }
+
+                const evento = eventoChk.checked;
+                const fechaOcasion = evento ? ($('#entregaFechaOcasion').value || fecha) : '';
+                cerrar({
+                    fecha, hora, telefono,
+                    dedicatoria: ($('#entregaDedicatoria').value || '').trim(),
+                    evento,
+                    ocasion: evento ? $('#entregaOcasion').value : '',
+                    fechaOcasion,
+                });
+            });
+            $('#entregaFecha').focus();
+        });
+    }
+
+    // La factura llega a la cuenta de Gmail del cliente (la enviará n8n).
+    function msgFacturaGmail(email) {
+        return I18n.te(
+            `Tu factura está en tu cuenta de Gmail (${email}).`,
+            `Your invoice is in your Gmail account (${email}).`);
+    }
+
+    async function checkout(opts = {}) {
+        if (count() === 0) return false;
         if (!Auth.session()) {
             showToast(I18n.te('Inicia sesión para finalizar tu pedido', 'Log in to place your order'), 'info');
             setTimeout(() => { window.location.href = 'login.html'; }, 900);
-            return;
+            return false;
         }
+
+        // La entrega es obligatoria. Desde el chat ya viene resuelta por el bot;
+        // desde el carrito se pide aquí con una ventana modal.
+        let entrega = opts.entrega || null;
+        if (!entrega && !opts.fromChat) {
+            entrega = await pedirEntrega();
+            if (!entrega) return false;
+        }
+        if (!entrega) return false;
+
         const items = read().map(i => {
             const p = Data.productos.find(p => p.id === i.id);
             return { id: p.id, nombre: p.nombre, qty: i.qty, precio: p.precio };
@@ -184,18 +378,34 @@ function add(id, cant = 1) {
         if (btn) { btn.disabled = true; btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i>${I18n.te('Procesando...', 'Processing...')}`; }
 
         try {
-            const creado = await API.savePedido({ items, email });
+            const creado = await API.savePedido({
+                items,
+                entrega: `${entrega.fecha} ${entrega.hora}`,
+                evento: !!entrega.evento,
+                ocasion: entrega.ocasion || '',
+                fechaOcasion: entrega.fechaOcasion || '',
+                dedicatoria: entrega.dedicatoria || '',
+                telefono: entrega.telefono || '',
+            });
             clear();
             closeDrawer();
+            const etiqueta = etiquetaOcasion(entrega.ocasion);
+            const eventoNota = entrega.evento
+                ? ' · ' + (etiqueta || I18n.te('Ocasión especial', 'Special occasion'))
+                : '';
             showToast(I18n.te(
-                `¡Pedido #${creado.id} realizado! Total: ${Data.formatPrecio(creado.total)}.`,
-                `Order #${creado.id} placed! Total: ${Data.formatPrecio(creado.total)}.`), 'success');
+                `¡Pedido #${creado.id} realizado! Total: ${Data.formatPrecio(creado.total)} · Entrega: ${formatoEntrega(entrega.fecha, entrega.hora)}${eventoNota}.`,
+                `Order #${creado.id} placed! Total: ${Data.formatPrecio(creado.total)} · Delivery: ${formatoEntrega(entrega.fecha, entrega.hora)}${eventoNota}.`), 'success');
+            // Desde el chat lo anuncia el propio bot; desde el carrito, un mensaje en pantalla.
+            if (!opts.fromChat) showToast(msgFacturaGmail(email), 'info');
             // Recargar el catálogo para reflejar el inventario actualizado
             API.cargarCatalogo().then(() => {
                 document.dispatchEvent(new Event('fe:catalogo'));
             });
+            return true;
         } catch (e) {
             showToast(e.message || I18n.te('No se pudo realizar el pedido.', 'Could not place the order.'), 'error');
+            return false;
         } finally {
             if (btn) { btn.disabled = false; btn.innerHTML = `<i class="fa-solid fa-bag-shopping mr-2"></i>${I18n.te('Finalizar compra', 'Checkout')}`; }
         }
@@ -209,12 +419,12 @@ function add(id, cant = 1) {
         });
         document.getElementById('cartClose')?.addEventListener('click', closeDrawer);
         document.getElementById('cartOverlay')?.addEventListener('click', closeDrawer);
-        document.getElementById('checkoutBtn')?.addEventListener('click', checkout);
+        document.getElementById('checkoutBtn')?.addEventListener('click', () => checkout());
         document.addEventListener('fe:idioma', render);
         document.addEventListener('fe:moneda', render);
         render();
     }
 
-    return { add, setQty, remove, clear, count, totalCOP, items: read, render, init, open: openDrawer, close: closeDrawer, checkout, disponible };
+    return { add, setQty, remove, clear, count, totalCOP, items: read, render, init, open: openDrawer, close: closeDrawer, checkout, disponible, facturaGmail: msgFacturaGmail, validarEntrega, formatoEntrega, pedirEntrega, telefonoPerfil, etiquetaOcasion };
 })();
 window.Cart = Cart;

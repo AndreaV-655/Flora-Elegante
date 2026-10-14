@@ -67,6 +67,54 @@ Cada compra genera un recibo con **código único** (`FE-AAAAMMDD-XXXX`). El
 servidor crea el código y lo guarda en el pedido; el administrador lo ve en el
 panel de pedidos (`admin.html`).
 
+El registro solo acepta **cuentas de Gmail** (`@gmail.com`): la factura se
+enviará a la cuenta del cliente mediante **n8n**. Al finalizar la compra, la
+tienda le indica (en el chat y en pantalla) que su factura está en su cuenta de
+Gmail.
+
+## Entrega programada
+
+Todo pedido (desde el carrito o desde el chat) exige una **fecha y hora de
+entrega**, validada contra el horario del negocio: **lunes a sábado 8:00–20:00**
+y **domingo 9:00–14:00**, y siempre con fecha futura. La ventana se pide en una
+modal en el carrito (`js/cart.js`) y en un formulario dentro del chat
+(`js/chatbot.js`); el servidor la vuelve a validar en `api/orders.php` antes de
+guardarla en la columna `pedido.entrega`.
+
+Al elegir la entrega se piden también los datos extra del pedido:
+
+- **Teléfono de contacto**: obligatorio si la cuenta aún no lo tiene guardado
+  (se guarda en `cliente_perfil.telefono`).
+- **Dedicatoria**: mensaje opcional para la tarjeta (`pedido.dedicatoria`).
+- **¿Es para una ocasión especial?** Al marcarlo se elige el **tipo** (cumpleaños,
+  aniversario u otro → `pedido.ocasion`) y la **fecha exacta de la ocasión**
+  (`pedido.fecha_evento`). Si no se marca, ambas columnas quedan vacías (`NULL`).
+
+El panel de administración y el historial del cliente señalan la ocasión especial
+con su tipo y fecha, además de la dedicatoria.
+
+## Integración con n8n
+
+Al confirmar un pedido, `api/orders.php` envía un `POST` en JSON al webhook de
+n8n configurado en `N8N_WEBHOOK_URL` (`api/secretos.php`; en `api/config.php`
+queda vacío por defecto). El envío lo hace `api/n8n.php` con `cURL` y **nunca
+bloquea la compra**: si n8n no está disponible o la URL está vacía, el pedido ya
+quedó guardado y la compra sigue igual. El servidor usa peticiones tolerantes a
+fallos (timeout corto) y registra el error en el log de PHP.
+
+El webhook recibe un JSON con:
+
+- `tipo` (`pedido.creado`), `origen` e `idioma`.
+- `pedido`: `id`, `codigo` (recibo), `estado`, `fecha`, `total`, `entrega`,
+  `evento`, `ocasion`, `fecha_evento` y `dedicatoria`.
+- `cliente`: `id`, `nombre`, `email` y `telefono`.
+- `flor_solicitada` (resumen de los arreglos), `items` (detalle de cada arreglo)
+  y `recibo`.
+
+Webhook por defecto:
+`http://localhost:5678/webhook-test/048c3e44-4725-4d25-941e-321bb9020338`.
+Para desactivar el envío, deja `N8N_WEBHOOK_URL` vacío (`''`).
+
 ## Base de datos
 
 Importa `sql/flora_elegante_mysql.sql` desde phpMyAdmin. Crea las tablas de

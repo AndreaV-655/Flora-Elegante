@@ -155,18 +155,30 @@ const API = (() => {
         return r.pedidos || [];
     }
 
-    // Crea el pedido en la BD (el servidor valida inventario y lo actualiza)
-    // y devuelve el recibo con su código único.
-    async function savePedido(pedido) {
+    // Crea el pedido en la BD (el servidor valida inventario y la entrega)
+    // y devuelve el recibo con su código único. Los datos extra (ocasión,
+    // dedicatoria y teléfono) van a la BD y de ahí al webhook de n8n.
+    async function savePedido({ items, entrega, evento, ocasion, fechaOcasion, dedicatoria, telefono }) {
         const r = await request('orders', 'create', {
-            items: pedido.items,
+            items,
+            entrega,
+            evento: !!evento,
+            ocasion: ocasion || '',
+            fechaOcasion: fechaOcasion || '',
+            dedicatoria: dedicatoria || '',
+            telefono: telefono || '',
             lang: (window.I18n ? I18n.lang() : 'es'),
         }, 'POST');
+        const p = r.pedido || {};
         return {
-            id: r.pedido.id,
-            total: r.pedido.total,
-            estado: r.pedido.estado,
-            codigo: r.pedido.codigo || '',
+            id: p.id,
+            total: p.total,
+            estado: p.estado,
+            codigo: p.codigo || '',
+            entrega: p.entrega || null,
+            fechaEvento: p.fecha_evento || null,
+            ocasion: p.ocasion || null,
+            dedicatoria: p.dedicatoria || null,
             recibo: r.recibo || null,
         };
     }

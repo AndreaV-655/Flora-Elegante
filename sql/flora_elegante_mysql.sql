@@ -121,6 +121,10 @@ CREATE TABLE IF NOT EXISTS pedido (
     estado         VARCHAR(20) NOT NULL DEFAULT 'Confirmado',
     total          DECIMAL(12,2) NOT NULL DEFAULT 0,
     codigo         VARCHAR(40) NULL UNIQUE,          -- recibo único del pedido
+    entrega        DATETIME NULL,                    -- fecha y hora de entrega programada
+    fecha_evento   DATETIME NULL,                    -- fecha del evento/fecha especial (igual a la entrega si aplica)
+    dedicatoria    VARCHAR(500) NULL,                -- mensaje para la tarjeta (opcional)
+    ocasion        VARCHAR(40) NULL,                 -- 'cumpleanos' | 'aniversario' | 'otro' (NULL si no aplica)
     CONSTRAINT fk_pedido_cliente FOREIGN KEY (cliente_id) REFERENCES usuario(id)
 ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4;
 
@@ -136,6 +140,30 @@ PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
 SET @sql := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE pedido ADD COLUMN codigo VARCHAR(40) NULL UNIQUE AFTER total', 'DO 0')
              FROM information_schema.COLUMNS
              WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'pedido' AND COLUMN_NAME = 'codigo');
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
+
+-- Migración idempotente: fecha y hora de entrega programada.
+SET @sql := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE pedido ADD COLUMN entrega DATETIME NULL AFTER codigo', 'DO 0')
+             FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'pedido' AND COLUMN_NAME = 'entrega');
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
+
+-- Migración idempotente: fecha del evento/fecha especial (NULL si no aplica).
+SET @sql := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE pedido ADD COLUMN fecha_evento DATETIME NULL AFTER entrega', 'DO 0')
+             FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'pedido' AND COLUMN_NAME = 'fecha_evento');
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
+
+-- Migración idempotente: dedicatoria (mensaje para la tarjeta).
+SET @sql := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE pedido ADD COLUMN dedicatoria VARCHAR(500) NULL AFTER fecha_evento', 'DO 0')
+             FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'pedido' AND COLUMN_NAME = 'dedicatoria');
+PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
+
+-- Migración idempotente: tipo de ocasión especial (cumpleaños, aniversario, otro).
+SET @sql := (SELECT IF(COUNT(*) = 0, 'ALTER TABLE pedido ADD COLUMN ocasion VARCHAR(40) NULL AFTER dedicatoria', 'DO 0')
+             FROM information_schema.COLUMNS
+             WHERE TABLE_SCHEMA = DATABASE() AND TABLE_NAME = 'pedido' AND COLUMN_NAME = 'ocasion');
 PREPARE st FROM @sql; EXECUTE st; DEALLOCATE PREPARE st;
 
 CREATE TABLE IF NOT EXISTS pedido_detalle (

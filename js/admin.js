@@ -29,6 +29,26 @@ const AdminPanel = (() => {
         }[e] || 'bg-gray-100 text-gray-600';
     }
 
+    // Fecha programada ("2026-10-15 10:00:00" → "15 oct 2026, 10:00").
+    // Si la hora es 00:00 (fechas de ocasión), muestra solo el día.
+    function fmtEntrega(iso) {
+        if (!iso) return '';
+        const [f, h] = String(iso).split(' ');
+        const [y, m, d] = String(f || '').split('-').map(Number);
+        if (!y || !m || !d) return '';
+        const meses = I18n.te('ene,feb,mar,abr,may,jun,jul,ago,sep,oct,nov,dic', 'Jan,Feb,Mar,Apr,May,Jun,Jul,Aug,Sep,Oct,Nov,Dec').split(',');
+        const hora = String(h || '').slice(0, 5);
+        return (hora && hora !== '00:00') ? `${d} ${meses[m - 1]} ${y}, ${hora}` : `${d} ${meses[m - 1]} ${y}`;
+    }
+
+    // Nombre legible del tipo de ocasión especial.
+    function ocasionTxt(tipo) {
+        const t = String(tipo || '').toLowerCase();
+        if (t === 'cumpleanos') return I18n.te('Cumpleaños', 'Birthday');
+        if (t === 'aniversario') return I18n.te('Aniversario', 'Anniversary');
+        return I18n.te('Otra ocasión', 'Other occasion');
+    }
+
     // ============================================================
     // DASHBOARD
     // ============================================================
@@ -256,6 +276,7 @@ const AdminPanel = (() => {
                         <th class="px-4 py-3 font-bold text-charcoal text-xs uppercase">${I18n.te('Recibo', 'Receipt')}</th>
                         <th class="px-4 py-3 font-bold text-charcoal text-xs uppercase">${I18n.te('Cliente', 'Customer')}</th>
                         <th class="px-4 py-3 font-bold text-charcoal text-xs uppercase">${I18n.te('Fecha', 'Date')}</th>
+                        <th class="px-4 py-3 font-bold text-charcoal text-xs uppercase">${I18n.te('Entrega', 'Delivery')}</th>
                         <th class="px-4 py-3 font-bold text-charcoal text-xs uppercase">${I18n.te('Total', 'Total')}</th>
                         <th class="px-4 py-3 font-bold text-charcoal text-xs uppercase">${I18n.te('Estado', 'Status')}</th>
                         <th class="px-4 py-3 font-bold text-charcoal text-xs uppercase text-right">${I18n.te('Acciones', 'Actions')}</th>
@@ -275,6 +296,7 @@ const AdminPanel = (() => {
                             <p class="text-xs text-muted">${p.email}</p>
                         </td>
                         <td class="px-4 py-3 text-muted">${String(p.fecha).slice(0, 16).replace('T', ' ')}</td>
+                        <td class="px-4 py-3 text-muted whitespace-nowrap">${p.entrega ? fmtEntrega(p.entrega) : '—'}${p.fecha_evento ? ` <span class="ml-1 text-[10px] font-bold uppercase tracking-wide text-terra">${ocasionTxt(p.ocasion)}</span>` : ''}</td>
                         <td class="px-4 py-3 font-bold text-terra">${Data.formatPrecio(p.total)}</td>
                         <td class="px-4 py-3">
                             <span class="text-[10px] px-2 py-1 rounded-full font-bold ${statusColor(p.estado)}">${I18n.te(p.estado, p.estado)}</span>
@@ -302,6 +324,9 @@ const AdminPanel = (() => {
             <div class="mb-4 text-sm text-muted">
                 ${I18n.te('Cliente', 'Customer')}: <strong class="text-charcoal">${p.nombre} (${p.email})</strong><br>
                 ${I18n.te('Fecha', 'Date')}: <strong class="text-charcoal">${String(p.fecha).slice(0, 16).replace('T', ' ')}</strong><br>
+                ${p.entrega ? `${I18n.te('Entrega', 'Delivery')}: <strong class="text-charcoal">${fmtEntrega(p.entrega)}</strong><br>` : ''}
+                ${p.fecha_evento ? `${I18n.te('Ocasión', 'Occasion')}: <strong class="text-charcoal">${ocasionTxt(p.ocasion)}</strong> · ${fmtEntrega(p.fecha_evento)}<br>` : ''}
+                ${p.dedicatoria ? `${I18n.te('Dedicatoria', 'Dedication')}: <strong class="text-charcoal">${esc(p.dedicatoria)}</strong><br>` : ''}
                 ${I18n.te('Estado', 'Status')}: <span class="font-bold ${statusColor(p.estado).split(' ')[1]}">${I18n.te(p.estado, p.estado)}</span>
             </div>
             ${p.codigo ? `

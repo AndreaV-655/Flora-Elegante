@@ -29,6 +29,7 @@ const I18n = (() => {
         'Correo electrónico': 'Email address',
         'Contraseña': 'Password',
         'Confirmar contraseña': 'Confirm password',
+        'Solo aceptamos cuentas de Gmail.': 'We only accept Gmail accounts.',
         'Teléfono': 'Phone',
         'Dirección de entrega': 'Delivery address',
         'Fecha de nacimiento': 'Date of birth',
@@ -188,7 +189,7 @@ const I18n = (() => {
     // ---------- Placeholders / títulos / aria ----------
     const ATR = {
         'Ej: María García López': 'e.g. Maria Garcia Lopez',
-        'maria@correo.com': 'maria@correo.com',
+        'maria@gmail.com': 'maria@gmail.com',
         'tu@correo.com': 'you@email.com',
         'Crea una contraseña segura': 'Create a strong password',
         'Repite tu contraseña': 'Repeat your password',

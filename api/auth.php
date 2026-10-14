@@ -53,6 +53,10 @@ switch ($action) {
 
         if (!$nombre || !$email || !$pass) json_error('Completa todos los campos obligatorios.', 400);
         if (!filter_var($email, FILTER_VALIDATE_EMAIL)) json_error('Correo electrónico no válido.', 400);
+        // Registro restringido: solo cuentas de Gmail (se usan para enviar la factura).
+        if (!preg_match('/@gmail\.com$/i', $email)) {
+            json_error('Solo aceptamos cuentas de Gmail (ej. nombre@gmail.com).', 400);
+        }
         if (strlen($pass) < 8 || !preg_match('/[A-Z]/', $pass) || !preg_match('/[a-z]/', $pass) || !preg_match('/\d/', $pass)) {
             json_error('La contraseña debe tener 8+ caracteres con mayúscula, minúscula y número.', 400);
         }

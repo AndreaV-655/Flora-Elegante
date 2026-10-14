@@ -37,3 +37,13 @@ if (is_file(__DIR__ . '/secretos.php')) {
 }
 if (!defined('GEMINI_API_KEY')) define('GEMINI_API_KEY', '');
 if (!defined('GEMINI_MODEL'))   define('GEMINI_MODEL', 'gemini-3.5-flash');
+
+// ============================================================
+// INTEGRACIÓN CON n8n (webhook del pedido)
+// ------------------------------------------------------------
+// URL del webhook de n8n que recibe cada pedido confirmado para
+// enviar la factura por correo. La URL real vive en secretos.php
+// (local); aquí queda vacía por defecto. Si está vacía, no se envía
+// nada y la compra funciona igual.
+// ============================================================
+if (!defined('N8N_WEBHOOK_URL')) define('N8N_WEBHOOK_URL', '');

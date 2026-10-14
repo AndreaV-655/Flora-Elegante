@@ -16,6 +16,14 @@ const Historial = (() => {
         'Cancelado': I18n.te('Cancelado', 'Cancelled'),
     }[e] || e);
 
+    // Nombre legible del tipo de ocasión especial.
+    const ocasionTxt = tipo => {
+        const t = String(tipo || '').toLowerCase();
+        if (t === 'cumpleanos') return I18n.te('Cumpleaños', 'Birthday');
+        if (t === 'aniversario') return I18n.te('Aniversario', 'Anniversary');
+        return I18n.te('Otra ocasión', 'Other occasion');
+    };
+
     // Normaliza un pedido del backend al formato esperado por la vista
     function normalizar(p) {
         const items = (p.items || []).map(it => ({
@@ -29,6 +37,10 @@ const Historial = (() => {
             estado: p.estado,
             total: Number(p.total),
             email: p.email,
+            entrega: p.entrega || null,
+            fechaEvento: p.fecha_evento || null,
+            ocasion: p.ocasion || null,
+            dedicatoria: p.dedicatoria || null,
             items,
         };
     }
@@ -39,12 +51,32 @@ const Historial = (() => {
                 <span class="text-charcoal"><i class="fa-solid fa-seedling text-leaf text-xs mr-2"></i>${it.cantidad} × ${it.nombre}</span>
                 <span class="text-muted whitespace-nowrap">${Data.formatPrecio(it.precio * it.cantidad)}</span>
             </li>`).join('');
+        let entregaHtml = '';
+        if (p.entrega) {
+            const [f, h] = String(p.entrega).split(' ');
+            const hora = (h || '').slice(0, 5);
+            entregaHtml = `<p class="text-xs text-muted mt-1"><i class="fa-solid fa-truck-fast text-leaf mr-1"></i>${I18n.te('Entrega', 'Delivery')}: ${Cart.formatoEntrega(f, hora)}</p>`;
+        }
+        let eventoHtml = '';
+        if (p.fechaEvento) {
+            const [f, h] = String(p.fechaEvento).split(' ');
+            const hora = (h || '').slice(0, 5);
+            const cuando = (hora && hora !== '00:00') ? Cart.formatoEntrega(f, hora) : fmtFecha(f);
+            eventoHtml = `<p class="text-xs text-terra mt-1"><i class="fa-solid fa-star mr-1"></i>${I18n.te('Ocasión especial', 'Special occasion')} (${ocasionTxt(p.ocasion)}): ${cuando}</p>`;
+        }
+        let dedicatoriaHtml = '';
+        if (p.dedicatoria) {
+            dedicatoriaHtml = `<p class="text-xs text-muted mt-1"><i class="fa-solid fa-quote-left mr-1"></i>${I18n.te('Dedicatoria', 'Dedication')}: ${p.dedicatoria}</p>`;
+        }
         return `
         <article class="bg-white rounded-xl border border-bord p-6 shadow-sm">
             <header class="flex flex-wrap items-center justify-between gap-3 pb-4 mb-4 border-b border-bord">
                 <div>
                     <p class="font-display font-bold text-charcoal">${I18n.te('Pedido', 'Order')} #${p.id}</p>
                     <p class="text-xs text-muted mt-1"><i class="fa-regular fa-calendar mr-1"></i>${fmtFecha(p.fecha)}</p>
+                    ${entregaHtml}
+                    ${eventoHtml}
+                    ${dedicatoriaHtml}
                 </div>
                 <span class="text-xs px-3 py-1 rounded-full bg-leaf/10 text-leaf font-bold">${estadoTxt(p.estado)}</span>
             </header>

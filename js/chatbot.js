@@ -142,14 +142,49 @@ const Chat = (() => {
         loginOk: n => I18n.te(`¡Listo, ${n}! Tu sesión está iniciada.`, `Done, ${n}! You are logged in.`),
         sesionActiva: n => I18n.te(`Ya tienes la sesión iniciada como <strong>${n}</strong>.`, `You are already logged in as <strong>${n}</strong>.`),
 
+        // Crear cuenta desde el chat
+        registerIntro: () => I18n.te('Con gusto te creo la cuenta. Completa tus datos:', 'I\'ll gladly create your account. Fill in your details:'),
+        registerNombre: () => I18n.te('Nombre completo', 'Full name'),
+        registerBtn: () => I18n.te('Crear cuenta', 'Create account'),
+        registerCampos: () => I18n.te('Completa nombre, correo y contraseña.', 'Please fill in name, email and password.'),
+        registerGmail: () => I18n.te('Solo aceptamos cuentas de Gmail (ej. nombre@gmail.com).', 'We only accept Gmail accounts (e.g. name@gmail.com).'),
+        registerPass: () => I18n.te('La contraseña debe tener al menos 8 caracteres, una mayúscula, una minúscula y un número.', 'Password must be at least 8 characters with an uppercase, a lowercase and a number.'),
+        registerError: () => I18n.te('No pudimos crear tu cuenta. Inténtalo de nuevo.', 'We couldn\'t create your account. Please try again.'),
+        registerOk: n => I18n.te(`¡Cuenta creada, ${n}! Ya puedes continuar con tu compra.`, `Account created, ${n}! You can now continue with your purchase.`),
+        sinCuenta: () => I18n.te('¿No tienes cuenta?', 'Don\'t have an account?'),
+        yaTengoCuenta: () => I18n.te('¿Ya tienes cuenta?', 'Already have an account?'),
+        iniciarSesionLink: () => I18n.te('Inicia sesión', 'Log in'),
+
         // Finalizar pedido desde el chat
         pedidoSinCarrito: () => I18n.te('Tu carrito está vacío. Agrega arreglos y luego confirmo tu pedido.', 'Your cart is empty. Add arrangements and I\'ll place your order.'),
-        pedidoSesion: () => I18n.te('Para confirmar tu pedido, primero inicia sesión:', 'To confirm your order, log in first:'),
+        pedidoSesion: () => I18n.te('Para confirmar tu pedido, inicia sesión o crea una cuenta:', 'To confirm your order, log in or create an account:'),
         pedidoProcesando: n => I18n.te(`Perfecto, voy a confirmar tu pedido con <strong>${n}</strong> artículo${n > 1 ? 's' : ''}...`, `Great, I\'ll confirm your order with <strong>${n}</strong> item${n > 1 ? 's' : ''}...`),
 
+        // Fecha/hora de entrega y datos extra del pedido (horario del negocio)
+        entregaIntro: () => I18n.te('¿Para cuándo quieres la entrega? Completa los datos (lun-sáb 8:00-20:00, dom 9:00-14:00):', 'When would you like the delivery? Fill in the details (Mon-Sat 8:00-20:00, Sun 9:00-14:00):'),
+        entregaFecha: () => I18n.te('Fecha de entrega', 'Delivery date'),
+        entregaHora: () => I18n.te('Hora de entrega', 'Delivery time'),
+        entregaTelefono: () => I18n.te('Teléfono de contacto', 'Contact phone'),
+        entregaDedicatoria: () => I18n.te('Dedicatoria (opcional)', 'Dedication (optional)'),
+        entregaDedicatoriaPh: () => I18n.te('Mensaje para la tarjeta', 'Message for the card'),
+        entregaEvento: () => I18n.te('¿Es para una ocasión especial?', 'Is it for a special occasion?'),
+        entregaOcasionTipo: () => I18n.te('Tipo de ocasión', 'Occasion type'),
+        entregaFechaOcasion: () => I18n.te('Fecha de la ocasión', 'Occasion date'),
+        ocasionCumpleanos: () => I18n.te('Cumpleaños', 'Birthday'),
+        ocasionAniversario: () => I18n.te('Aniversario', 'Anniversary'),
+        ocasionOtro: () => I18n.te('Otra ocasión', 'Other occasion'),
+        entregaTelInvalido: () => I18n.te('Escribe un teléfono válido (entre 7 y 15 dígitos).', 'Enter a valid phone number (7 to 15 digits).'),
+        entregaBtn: () => I18n.te('Confirmar pedido', 'Confirm order'),
+        entregaProgramada: (fecha, hora, evento, ocasion) => I18n.te(
+            `Entrega programada para el ${Cart.formatoEntrega(fecha, hora)}${evento ? ' (' + (ocasion || 'ocasión especial') + ')' : ''}.`,
+            `Delivery scheduled for ${Cart.formatoEntrega(fecha, hora)}${evento ? ' (' + (ocasion || 'special occasion') + ')' : ''}.`),
+
+        // La factura llega a la cuenta de Gmail del cliente (la enviará n8n)
+        facturaGmail: email => Cart.facturaGmail(email),
+
         // La compra requiere sesión iniciada
-        compraSesion: () => I18n.te('Para realizar una compra, primero necesitas iniciar sesión:', 'To make a purchase, you need to log in first:'),
-        agregarSesion: () => I18n.te('Para agregar arreglos al carrito, primero inicia sesión:', 'To add arrangements to your cart, please log in first:'),
+        compraSesion: () => I18n.te('Para realizar una compra, inicia sesión o crea una cuenta:', 'To make a purchase, log in or create an account:'),
+        agregarSesion: () => I18n.te('Para agregar arreglos al carrito, inicia sesión o crea una cuenta:', 'To add arrangements to your cart, log in or create an account:'),
     };
 
     function init() {
@@ -453,11 +488,50 @@ const Chat = (() => {
                     <button type="button" onclick="ChatLoginSubmit()" class="w-full bg-forest hover:bg-forest-light text-white font-bold text-xs py-2 rounded-lg transition cursor-pointer">
                         <i class="fa-solid fa-right-to-bracket mr-1"></i>${T.loginBtn()}
                     </button>
+                    <p class="text-[11px] text-muted text-center pt-1">
+                        ${T.sinCuenta()}
+                        <button type="button" onclick="ChatShowRegister()" class="underline font-bold text-leaf cursor-pointer">${T.registerBtn()}</button>
+                    </p>
                 </div>`;
             container.appendChild(wrapper);
             container.scrollTop = container.scrollHeight;
             document.getElementById('chatLoginEmail')?.focus();
         }
+
+        function addRegisterForm() {
+            const container = document.getElementById('chatMessages');
+            const wrapper = document.createElement('div');
+            wrapper.className = 'flex items-end gap-2 max-w-[95%] chat-login';
+            wrapper.innerHTML = `
+                ${botAvatar()}
+                <div class="chat-bubble-bot p-3 w-full space-y-2">
+                    <input id="chatRegNombre" type="text" placeholder="${T.registerNombre()}" class="w-full text-sm border border-bord rounded-lg px-3 py-2 focus:outline-none focus:border-leaf">
+                    <input id="chatRegEmail" type="email" autocomplete="username" placeholder="${T.loginEmail()}" class="w-full text-sm border border-bord rounded-lg px-3 py-2 focus:outline-none focus:border-leaf">
+                    <input id="chatRegPass" type="password" autocomplete="new-password" placeholder="${T.loginPass()}" class="w-full text-sm border border-bord rounded-lg px-3 py-2 focus:outline-none focus:border-leaf">
+                    <p class="text-[10px] text-muted">${T.registerGmail()}</p>
+                    <button type="button" onclick="ChatRegisterSubmit()" class="w-full bg-leaf hover:bg-leaf-light text-white font-bold text-xs py-2 rounded-lg transition cursor-pointer">
+                        <i class="fa-solid fa-user-plus mr-1"></i>${T.registerBtn()}
+                    </button>
+                    <p class="text-[11px] text-muted text-center pt-1">
+                        ${T.yaTengoCuenta()}
+                        <button type="button" onclick="ChatShowLogin()" class="underline font-bold text-forest cursor-pointer">${T.iniciarSesionLink()}</button>
+                    </p>
+                </div>`;
+            container.appendChild(wrapper);
+            container.scrollTop = container.scrollHeight;
+            document.getElementById('chatRegNombre')?.focus();
+        }
+
+        window.ChatShowRegister = function () {
+            document.querySelectorAll('.chat-login').forEach(el => el.remove());
+            addBotMessage(T.registerIntro());
+            addRegisterForm();
+        };
+
+        window.ChatShowLogin = function () {
+            document.querySelectorAll('.chat-login').forEach(el => el.remove());
+            addLoginForm();
+        };
 
         window.ChatLoginSubmit = async function () {
             const email = (document.getElementById('chatLoginEmail')?.value || '').trim();
@@ -465,7 +539,7 @@ const Chat = (() => {
             if (!email || !pass) { addBotMessage(T.loginCampos()); return; }
             try {
                 const r = await Auth.login(email, pass);
-                document.querySelector('.chat-login')?.remove();
+                document.querySelectorAll('.chat-login').forEach(el => el.remove());
                 if (!r.ok) {
                     addBotMessage(I18n.te('No pudimos iniciar sesión: ', 'We couldn\'t log you in: ') + (r.msg || ''));
                     return;
@@ -475,6 +549,125 @@ const Chat = (() => {
             } catch (e) {
                 addBotMessage(T.loginError());
             }
+        };
+
+        window.ChatRegisterSubmit = async function () {
+            const nombre = (document.getElementById('chatRegNombre')?.value || '').trim();
+            const email  = (document.getElementById('chatRegEmail')?.value || '').trim();
+            const pass   = (document.getElementById('chatRegPass')?.value || '');
+            if (!nombre || !email || !pass) { addBotMessage(T.registerCampos()); return; }
+            if (!/@gmail\.com$/i.test(email)) { addBotMessage(T.registerGmail()); return; }
+            if (pass.length < 8 || !/[A-Z]/.test(pass) || !/[a-z]/.test(pass) || !/[0-9]/.test(pass)) { addBotMessage(T.registerPass()); return; }
+            try {
+                const r = await Auth.register({ nombre, email, password: pass });
+                document.querySelectorAll('.chat-login').forEach(el => el.remove());
+                if (!r.ok) {
+                    addBotMessage(I18n.te('No pudimos crear tu cuenta: ', 'We couldn\'t create your account: ') + (r.msg || ''));
+                    return;
+                }
+                Auth.renderNavAuth();
+                addBotMessage(T.registerOk(r.user.nombre));
+            } catch (e) {
+                addBotMessage(T.registerError());
+            }
+        };
+
+        // ---- Fecha y hora de entrega desde el chat ----
+        function hoyISO() {
+            const d = new Date();
+            const mm = String(d.getMonth() + 1).padStart(2, '0');
+            const dd = String(d.getDate()).padStart(2, '0');
+            return `${d.getFullYear()}-${mm}-${dd}`;
+        }
+
+        function addEntregaForm() {
+            document.querySelectorAll('.chat-entrega').forEach(el => el.remove());
+            const container = document.getElementById('chatMessages');
+            const wrapper = document.createElement('div');
+            wrapper.className = 'flex items-end gap-2 max-w-[95%] chat-entrega';
+            wrapper.innerHTML = `
+                ${botAvatar()}
+                <div class="chat-bubble-bot p-3 w-full space-y-2">
+                    <label class="block text-[11px] font-bold text-charcoal">${T.entregaFecha()}</label>
+                    <input id="chatEntregaFecha" type="date" min="${hoyISO()}" class="w-full text-sm border border-bord rounded-lg px-3 py-2 focus:outline-none focus:border-leaf">
+                    <label class="block text-[11px] font-bold text-charcoal">${T.entregaHora()}</label>
+                    <input id="chatEntregaHora" type="time" class="w-full text-sm border border-bord rounded-lg px-3 py-2 focus:outline-none focus:border-leaf">
+                    <label class="block text-[11px] font-bold text-charcoal">${T.entregaTelefono()}</label>
+                    <input id="chatEntregaTelefono" type="tel" placeholder="+57 300 123 4567" class="w-full text-sm border border-bord rounded-lg px-3 py-2 focus:outline-none focus:border-leaf">
+                    <label class="block text-[11px] font-bold text-charcoal">${T.entregaDedicatoria()}</label>
+                    <textarea id="chatEntregaDedicatoria" rows="2" maxlength="500" placeholder="${T.entregaDedicatoriaPh()}" class="w-full text-sm border border-bord rounded-lg px-3 py-2 resize-none focus:outline-none focus:border-leaf"></textarea>
+                    <div class="flex items-start gap-2 pt-1">
+                        <input id="chatEntregaEvento" type="checkbox" class="mt-0.5 w-4 h-4 accent-leaf cursor-pointer">
+                        <label for="chatEntregaEvento" class="text-[11px] text-charcoal cursor-pointer">${T.entregaEvento()}</label>
+                    </div>
+                    <div id="chatEntregaOcasionBox" class="hidden space-y-2 pl-6">
+                        <label class="block text-[11px] font-bold text-charcoal">${T.entregaOcasionTipo()}</label>
+                        <select id="chatEntregaOcasion" class="w-full text-sm border border-bord rounded-lg px-3 py-2 focus:outline-none focus:border-leaf">
+                            <option value="cumpleanos">${T.ocasionCumpleanos()}</option>
+                            <option value="aniversario">${T.ocasionAniversario()}</option>
+                            <option value="otro">${T.ocasionOtro()}</option>
+                        </select>
+                        <label class="block text-[11px] font-bold text-charcoal">${T.entregaFechaOcasion()}</label>
+                        <input id="chatEntregaFechaOcasion" type="date" min="${hoyISO()}" class="w-full text-sm border border-bord rounded-lg px-3 py-2 focus:outline-none focus:border-leaf">
+                    </div>
+                    <p id="chatEntregaError" class="hidden text-terra text-[11px]"></p>
+                    <button type="button" onclick="ChatEntregaSubmit()" class="w-full bg-leaf hover:bg-leaf-light text-white font-bold text-xs py-2 rounded-lg transition cursor-pointer">
+                        <i class="fa-solid fa-truck-fast mr-1"></i>${T.entregaBtn()}
+                    </button>
+                </div>`;
+            container.appendChild(wrapper);
+            container.scrollTop = container.scrollHeight;
+
+            // Precargar el teléfono del perfil, si ya lo tiene guardado.
+            Cart.telefonoPerfil().then(tel => {
+                const el = document.getElementById('chatEntregaTelefono');
+                if (el && !el.value && tel) el.value = tel;
+            });
+
+            // Al marcar "ocasión especial" se muestran tipo y fecha.
+            const chk = document.getElementById('chatEntregaEvento');
+            const box = document.getElementById('chatEntregaOcasionBox');
+            chk?.addEventListener('change', () => {
+                box?.classList.toggle('hidden', !chk.checked);
+                const fechaOc = document.getElementById('chatEntregaFechaOcasion');
+                if (chk.checked && fechaOc && !fechaOc.value) {
+                    fechaOc.value = document.getElementById('chatEntregaFecha')?.value || hoyISO();
+                }
+            });
+
+            document.getElementById('chatEntregaFecha')?.focus();
+        }
+
+        window.ChatEntregaSubmit = async function () {
+            const fecha = document.getElementById('chatEntregaFecha')?.value || '';
+            const hora  = document.getElementById('chatEntregaHora')?.value || '';
+            const errEl = document.getElementById('chatEntregaError');
+            const mostrarError = msg => { if (errEl) { errEl.textContent = msg; errEl.classList.remove('hidden'); } };
+
+            const v = Cart.validarEntrega(fecha, hora);
+            if (!v.ok) { mostrarError(v.msg); return; }
+
+            const telefono = (document.getElementById('chatEntregaTelefono')?.value || '').trim();
+            const digitos = telefono.replace(/\D/g, '');
+            if (!telefono || digitos.length < 7 || digitos.length > 15) { mostrarError(T.entregaTelInvalido()); return; }
+
+            const evento = !!document.getElementById('chatEntregaEvento')?.checked;
+            const ocasion = evento ? (document.getElementById('chatEntregaOcasion')?.value || '') : '';
+            const fechaOcasion = evento ? (document.getElementById('chatEntregaFechaOcasion')?.value || '') : '';
+            const dedicatoria = (document.getElementById('chatEntregaDedicatoria')?.value || '').trim();
+            const email = Auth.session()?.email || '';
+
+            document.querySelectorAll('.chat-entrega').forEach(el => el.remove());
+            showTyping(() => {
+                addBotMessage(T.pedidoProcesando(Cart.count()));
+                setTimeout(async () => {
+                    const ok = await Cart.checkout({ fromChat: true, entrega: { fecha, hora, evento, ocasion, fechaOcasion, dedicatoria, telefono } });
+                    if (ok) {
+                        addBotMessage(T.facturaGmail(email));
+                        addBotMessage(T.entregaProgramada(fecha, hora, evento, Cart.etiquetaOcasion(ocasion)));
+                    }
+                }, 400);
+            }, 600);
         };
 
         // ---- Agregar al carrito desde el chat (requiere sesión) ----
@@ -503,11 +696,10 @@ const Chat = (() => {
                 return;
             }
             showTyping(() => {
-                addBotMessage(T.pedidoProcesando(Cart.count()));
-                setTimeout(() => Cart.checkout(), 400);
+                addBotMessage(T.entregaIntro());
+                addEntregaForm();
             }, 600);
         }
-
         // Fila de producto reutilizable (catálogo completo y ocasiones)
         function productRow(p) {
             return `

@@ -7,6 +7,8 @@
 const Form = (() => {
 
     const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+    // El registro solo acepta cuentas de Gmail (allí llega la factura).
+    const EMAIL_GMAIL_RE = /^[^\s@]+@gmail\.com$/i;
     let modoPerfil = false;
 
     function init() {
@@ -41,6 +43,7 @@ const Form = (() => {
             emailInput.readOnly = true;
             emailInput.classList.add('bg-cream', 'cursor-not-allowed');
             emailInput.title = 'El correo no puede modificarse';
+            document.getElementById('emailGmailHint')?.classList.add('hidden');
 
             changeCheck?.addEventListener('change', () => {
                 const show = changeCheck.checked;
@@ -134,7 +137,8 @@ const Form = (() => {
             }
 
             if (!email) { fieldError('email', I18n.te('El correo electrónico es obligatorio.', 'Email address is required.')); firstBad = firstBad || form.email; }
-            else if (!EMAIL_RE.test(email)) { fieldError('email', I18n.te('Ingresa un correo electrónico válido (ej. maria@correo.com).', 'Enter a valid email address (e.g. maria@mail.com).')); firstBad = firstBad || form.email; }
+            else if (!EMAIL_RE.test(email)) { fieldError('email', I18n.te('Ingresa un correo electrónico válido (ej. maria@gmail.com).', 'Enter a valid email address (e.g. maria@gmail.com).')); firstBad = firstBad || form.email; }
+            else if (!modoPerfil && !EMAIL_GMAIL_RE.test(email)) { fieldError('email', I18n.te('Solo aceptamos cuentas de Gmail (ej. maria@gmail.com).', 'We only accept Gmail accounts (e.g. maria@gmail.com).')); firstBad = firstBad || form.email; }
 
             // Contraseñas: solo en registro nuevo o si pidió cambiarla en perfil
             if (!modoPerfil || cambiarPass) {
